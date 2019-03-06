@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 DIRECTORY = Path(__file__).resolve().parent
@@ -119,7 +119,7 @@ def run_experiment(params):
         f'num{params.num_albums}',
         f'max{params.max_internal_actions}',
     ])
-    results_dir = Path(DIRECTORY, 'results', Path(params.data_file).name)
+    results_dir = Path(DIRECTORY, 'results', params.results_folder)
     results_dir.mkdir(parents=True, exist_ok=True)
     data_file = results_dir.joinpath(filename + '.csv')
     for episode, mean_return in zip(episodes, trial_result):
@@ -145,7 +145,8 @@ PSPACE = PermutationSpace(
     eval_frequency=100,
     num_albums=range(100, 1050, 100),
     max_internal_actions=range(1, 6),
-    data_file='data/album_decade'
+    data_file='data/album_decade',
+    results_folder=date.today().isoformat(),
 )
 PSPACE.add_filter(lambda num_albums, max_internal_actions:
     num_albums == 100 or max_internal_actions == 1
