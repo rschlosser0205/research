@@ -121,9 +121,17 @@ def run_main_experiment(params, agent):
             f'max{params.max_internal_actions}',
         ])
         data_file = results_dir.joinpath(filename + '.csv')
-        for episode, mean_return in zip(episodes, trial_results):
+        try:
+            for episode, mean_return in zip(episodes, trial_results):
+                with data_file.open('a') as fd:
+                    fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+        except ValueError as err:
+            print('ERROR')
+            print(err)
             with data_file.open('a') as fd:
-                fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+                fd.write(str(err))
+                fd.write('\n')
+            break
 
 
 def save_weights(params, agent):
