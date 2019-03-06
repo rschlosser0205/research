@@ -100,6 +100,7 @@ def run_main_experiment(params, agent):
                 SparqlEndpoint('http://162.233.132.179:8890/sparql'),
                 augments=[DATE_DECADE],
             ),
+            buf_ignore=['scratch'],
             # Random Mixin
             random_seed=(first_episode + params.random_seed),
         )
