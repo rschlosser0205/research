@@ -82,6 +82,10 @@ def testing():
         print()
 
 
+def get_results_dir(params):
+    return Path(DIRECTORY, 'results', params.results_folder)
+
+
 def run_experiment(params):
     agent = epsilon_greedy(LinearQLearner)(
         # Linear Q Learner
@@ -119,7 +123,7 @@ def run_experiment(params):
         f'num{params.num_albums}',
         f'max{params.max_internal_actions}',
     ])
-    results_dir = Path(DIRECTORY, 'results', params.results_folder)
+    results_dir = get_results_dir(params)
     results_dir.mkdir(parents=True, exist_ok=True)
     data_file = results_dir.joinpath(filename + '.csv')
     for episode, mean_return in zip(episodes, trial_result):
