@@ -86,17 +86,8 @@ def get_results_dir(params):
     return Path(DIRECTORY, 'results', params.results_folder)
 
 
-def run_experiment(params):
-    agent = epsilon_greedy(LinearQLearner)(
-        # Linear Q Learner
-        learning_rate=0.1,
-        discount_rate=0.9,
-        feature_extractor=feature_extractor,
-        # Epsilon Greedy
-        exploration_rate=0.05,
-        # Random Mixin
-        random_seed=params.random_seed,
-    )
+def run_main_experiment(params, agent):
+    results_dir = get_results_dir(params)
     env = memory_architecture(RecordStore)(
         # record store
         data_file=params.data_file,
@@ -123,12 +114,14 @@ def run_experiment(params):
         f'num{params.num_albums}',
         f'max{params.max_internal_actions}',
     ])
-    results_dir = get_results_dir(params)
-    results_dir.mkdir(parents=True, exist_ok=True)
     data_file = results_dir.joinpath(filename + '.csv')
     for episode, mean_return in zip(episodes, trial_result):
         with data_file.open('a') as fd:
             fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+
+
+def save_weights(params, agent):
+    results_dir = get_results_dir(params)
     weights_file = results_dir.joinpath(filename + '.weights')
     with weights_file.open('w') as fd:
         for action, weights in agent.weights.items():
@@ -137,6 +130,22 @@ def run_experiment(params):
             for feature, weight in weights.items():
                 fd.write(f'    {feature} {weight}')
                 fd.write('\n')
+
+
+def run_experiment(params):
+    agent = epsilon_greedy(LinearQLearner)(
+        # Linear Q Learner
+        learning_rate=0.1,
+        discount_rate=0.9,
+        feature_extractor=feature_extractor,
+        # Epsilon Greedy
+        exploration_rate=0.05,
+        # Random Mixin
+        random_seed=params.random_seed,
+    )
+    results_dir = get_results_dir(params)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    run_main_experiment(params, agent)
 
 
 PSPACE = PermutationSpace(
