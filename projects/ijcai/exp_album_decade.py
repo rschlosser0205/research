@@ -116,12 +116,7 @@ def run_main_experiment(params, agent):
             first_episode + params.num_episodes + params.eval_frequency // 2,
             params.eval_frequency,
         )
-        filename = '_'.join([
-            f'seed{params.random_seed}',
-            f'num{params.num_albums}',
-            f'max{params.max_internal_actions}',
-        ])
-        data_file = results_dir.joinpath(filename + '.csv')
+        data_file = results_dir.joinpath(params.uniqstr_ + '.csv')
         try:
             for episode, mean_return in zip(episodes, trial_results):
                 with data_file.open('a') as fd:
