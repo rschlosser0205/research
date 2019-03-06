@@ -54,7 +54,10 @@ class RecordStore(Environment, RandomMixin):
                 question = tuple(sorted(question.items()))
                 answer = ' ; '.join(answer)
                 qnas.append((question, answer))
-        self.answers = {question: answer for question, answer in self.rng.sample(qnas, self.num_albums)}
+        if self.num_albums is None:
+            self.answers = {question: answer for question, answer in qnas}
+        else:
+            self.answers = {question: answer for question, answer in self.rng.sample(qnas, self.num_albums)}
         self.questions = sorted(self.answers.keys())
         self.actions = set(self.answers.values())
 
