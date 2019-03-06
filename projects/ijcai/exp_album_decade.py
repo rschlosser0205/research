@@ -44,7 +44,7 @@ def testing():
         # Random Mixin
         random_seed=8675309,
     )
-    for trial in range(1000):
+    for episode_num in range(1000):
         env.start_new_episode()
         step = 0
         total = 0
@@ -58,7 +58,7 @@ def testing():
             total += reward
             if total < -100:
                 break
-        print(trial, total)
+        print(f'Episode {episode_num} reward: {total}')
     env.start_new_episode()
     visited = set()
     for step in range(10):
