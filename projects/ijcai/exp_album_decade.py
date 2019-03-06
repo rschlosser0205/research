@@ -108,7 +108,7 @@ def run_main_experiment(params, agent):
             agent,
             num_episodes=params.num_episodes,
             eval_frequency=params.eval_frequency,
-            min_return=-100,
+            min_return=params.min_return,
         )
         episodes = range(
             first_episode,
@@ -169,6 +169,7 @@ PSPACE = PermutationSpace(
     data_file='data/album_decade',
     results_folder=date.today().isoformat(),
     num_transfers=[1],
+    min_return=-100,
     save_weights=False,
 )
 PSPACE.add_filter(lambda num_albums, max_internal_actions:
