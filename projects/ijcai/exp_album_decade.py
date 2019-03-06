@@ -88,36 +88,42 @@ def get_results_dir(params):
 
 def run_main_experiment(params, agent):
     results_dir = get_results_dir(params)
-    env = memory_architecture(RecordStore)(
-        # record store
-        data_file=params.data_file,
-        num_albums=params.num_albums,
-        # memory architecture
-        max_internal_actions=params.max_internal_actions,
-        knowledge_store=SparqlKB(
-            SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[DATE_DECADE],
-        ),
-        # Random Mixin
-        random_seed=params.random_seed,
-    )
-    trial_result = train_and_evaluate(
-        env,
-        agent,
-        num_episodes=params.num_episodes,
-        eval_frequency=params.eval_frequency,
-        min_return=-100,
-    )
-    episodes = range(0, params.num_episodes, params.eval_frequency)
-    filename = '_'.join([
-        f'seed{params.random_seed}',
-        f'num{params.num_albums}',
-        f'max{params.max_internal_actions}',
-    ])
-    data_file = results_dir.joinpath(filename + '.csv')
-    for episode, mean_return in zip(episodes, trial_result):
-        with data_file.open('a') as fd:
-            fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
+    for transfer_num in range(params.num_transfers + 1):
+        first_episode = transfer_num * params.num_episodes
+        env = memory_architecture(RecordStore)(
+            # record store
+            data_file=params.data_file,
+            num_albums=params.num_albums,
+            # memory architecture
+            max_internal_actions=params.max_internal_actions,
+            knowledge_store=SparqlKB(
+                SparqlEndpoint('http://162.233.132.179:8890/sparql'),
+                augments=[DATE_DECADE],
+            ),
+            # Random Mixin
+            random_seed=(first_episode + params.random_seed),
+        )
+        trial_results = train_and_evaluate(
+            env,
+            agent,
+            num_episodes=params.num_episodes,
+            eval_frequency=params.eval_frequency,
+            min_return=-100,
+        )
+        episodes = range(
+            first_episode,
+            first_episode + params.num_episodes + params.eval_frequency // 2,
+            params.eval_frequency,
+        )
+        filename = '_'.join([
+            f'seed{params.random_seed}',
+            f'num{params.num_albums}',
+            f'max{params.max_internal_actions}',
+        ])
+        data_file = results_dir.joinpath(filename + '.csv')
+        for episode, mean_return in zip(episodes, trial_results):
+            with data_file.open('a') as fd:
+                fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
 
 
 def save_weights(params, agent):
@@ -151,7 +157,7 @@ def run_experiment(params):
 
 
 PSPACE = PermutationSpace(
-    ['random_seed', 'num_albums', 'max_internal_actions'],
+    ['random_seed', 'num_transfers', 'num_albums', 'max_internal_actions'],
     random_seed=[
         0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
         0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
@@ -162,6 +168,7 @@ PSPACE = PermutationSpace(
     max_internal_actions=range(1, 6),
     data_file='data/album_decade',
     results_folder=date.today().isoformat(),
+    num_transfers=[1],
     save_weights=False,
 )
 PSPACE.add_filter(lambda num_albums, max_internal_actions:
