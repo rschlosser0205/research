@@ -107,7 +107,7 @@ def feature_extractor(state, action=None):
     for attribute, value in state.as_dict().items():
         if internal:
             features.add(attribute)
-        if external:
+        elif external and not attribute.startswith('perceptual_'):
             features.add((attribute, value))
     return features
 
