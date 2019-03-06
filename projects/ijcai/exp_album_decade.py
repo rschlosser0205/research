@@ -122,6 +122,8 @@ def run_main_experiment(params, agent):
 
 def save_weights(params, agent):
     results_dir = get_results_dir(params)
+    if not params.save_weights:
+        return
     weights_file = results_dir.joinpath(filename + '.weights')
     with weights_file.open('w') as fd:
         for action, weights in agent.weights.items():
@@ -160,6 +162,7 @@ PSPACE = PermutationSpace(
     max_internal_actions=range(1, 6),
     data_file='data/album_decade',
     results_folder=date.today().isoformat(),
+    save_weights=False,
 )
 PSPACE.add_filter(lambda num_albums, max_internal_actions:
     num_albums == 100 or max_internal_actions == 1
