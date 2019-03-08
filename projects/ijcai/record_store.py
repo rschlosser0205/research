@@ -112,7 +112,8 @@ def feature_extractor(state, action=None):
             features.add(attribute)
         elif external and not attribute.startswith('perceptual_'):
             features.add((attribute, value))
-    return features
+    value = 1 / len(features)
+    return {feature: value for feature in features} 
 
 
 NAME_FIRST_LETTER = SparqlKB.Augment(
