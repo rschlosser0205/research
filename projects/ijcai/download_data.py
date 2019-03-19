@@ -283,7 +283,6 @@ def get_valid_data(sparql_graph):
             qas[q_list] = answer
             if valid % 100 == 0:
                 LOGGER.info(f'processed {valid} valid albums out of {total} albums')
-                break
 
 
 def download_data(sparql_graph):
