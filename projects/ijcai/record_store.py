@@ -122,12 +122,6 @@ NAME_FIRST_LETTER = SparqlKB.Augment(
     first_letter,
 )
 
-DATE_YEAR = SparqlKB.Augment(
-    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-    '<http://wikidata.dbpedia.org/ontology/releaseYear>',
-    date_to_year,
-)
-
 DATE_DECADE = SparqlKB.Augment(
     '<http://wikidata.dbpedia.org/ontology/releaseDate>',
     '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
