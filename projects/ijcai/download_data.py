@@ -17,7 +17,6 @@ SparqlGraph = namedtuple('SparqlGraph', 'name, graph, start_vars, end_var, trans
 Action = namedtuple('Action', 'type, subject, property, object, result')
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 KB_SOURCE = SparqlEndpoint('http://162.233.132.179:8890/sparql')
 KB_ADAPTOR = SparqlKB(KB_SOURCE)
