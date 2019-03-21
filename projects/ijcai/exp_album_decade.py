@@ -4,6 +4,8 @@ import sys
 from datetime import datetime, date
 from pathlib import Path
 
+from SPARQLWrapper.SPARQLExceptions import QueryBadFormed
+
 DIRECTORY = Path(__file__).resolve().parent
 sys.path.insert(0, str(DIRECTORY))
 
@@ -174,7 +176,7 @@ def run_main_experiment(params, agent):
             for episode, mean_return in zip(episodes, trial_results):
                 with data_file.open('a') as fd:
                     fd.write(f'{datetime.now().isoformat("_")} {episode} {mean_return}\n')
-        except ValueError as err:
+        except QueryBadFormed as err:
             print('ERROR')
             print(err)
             with data_file.open('a') as fd:
