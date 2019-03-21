@@ -172,12 +172,16 @@ def all_sparql_results(query_template):
     limit = 100
     offset = 0
     query = query_template + f' LIMIT {limit} OFFSET {offset}'
-    results = KB_SOURCE.query_sparql(query)
-    while results:
+    while True:
+        results = KB_SOURCE.query_sparql(query)
+        try:
+            next_value = next(iter(results))
+        except StopIteration:
+            return
+        yield next_value
         yield from results
         offset += limit
         query = query_template + f' LIMIT {limit} OFFSET {offset}'
-        results = KB_SOURCE.query_sparql(query)
 
 
 def download_qa_pairs(sparql_graph):
