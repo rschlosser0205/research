@@ -258,7 +258,7 @@ PSPACE = PermutationSpace(
 ).filter(
     # factored parameter space
     lambda num_albums, max_internal_actions:
-        num_albums == 1000 or max_internal_actions == 2
+        num_albums == 5000 or max_internal_actions == 2
 ).filter(
     # only change internal actions for kb agents
     lambda agent_type, max_internal_actions:
@@ -267,7 +267,7 @@ PSPACE = PermutationSpace(
     # only run factored space for basic case
     lambda data_file, num_albums, max_internal_actions:
         data_file == 'album_date' or (
-            num_albums == 1000 and max_internal_actions == 2
+            num_albums == 5000 and max_internal_actions == 2
         )
 )
 
