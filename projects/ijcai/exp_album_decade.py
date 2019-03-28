@@ -241,6 +241,7 @@ PSPACE = PermutationSpace(
     ],
     num_episodes=10000,
     eval_frequency=100,
+    agent_type=['naive', 'kb'],
     num_albums=range(100, 1050, 100),
     max_internal_actions=range(1, 6),
     data_file=[
