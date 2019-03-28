@@ -123,6 +123,9 @@ class AttrDict:
         else:
             raise AttributeError('class {} has no attribute {}'.format(type(self).__name__, name))
 
+    def __contains__(self, key):
+        return key in self._attributes_
+
     def __getitem__(self, key):
         return self._attributes_[key]
 
