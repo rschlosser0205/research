@@ -51,13 +51,20 @@ class RecordStore(Environment, RandomMixin):
         qnas = []
         with self.data_file.open(encoding='utf-8') as fd:
             for question, answer in literal_eval(fd.read()):
-                question = tuple(sorted(question.items()))
-                answer = ' ; '.join(answer)
+                question = tuple(sorted(question))
                 qnas.append((question, answer))
         if self.num_albums is None:
             self.answers = {question: answer for question, answer in qnas}
+        elif self.num_albums > len(qnas) // 2: # FIXME parameterizable
+            self.answers = {
+                question: answer for question, answer
+                in self.rng.sample(qnas, len(qnas) // 2)
+            }
         else:
-            self.answers = {question: answer for question, answer in self.rng.sample(qnas, self.num_albums)}
+            self.answers = {
+                question: answer for question, answer
+                in self.rng.sample(qnas, self.num_albums)
+            }
         self.questions = sorted(self.answers.keys())
         self.actions = set(self.answers.values())
 
