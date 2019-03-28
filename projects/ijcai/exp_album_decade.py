@@ -13,7 +13,7 @@ sys.path.insert(0, str(DIRECTORY))
 from permspace import PermutationSpace
 
 from research.knowledge_base import SparqlEndpoint
-from research.pspace_run import parallel_main
+from research.pspace_run import pspace_run_cli
 from research.rl_core import train_and_evaluate
 from research.rl_agents import epsilon_greedy, TabularQLearningAgent, LinearQLearner
 from research.rl_memory import memory_architecture, SparqlKB
@@ -244,8 +244,11 @@ PSPACE.add_filter(lambda num_albums, max_internal_actions:
 
 
 def main():
-    curr_file = Path(__file__).resolve()
-    parallel_main(str(curr_file), f'{curr_file.stem}.PSPACE', f'{curr_file.stem}.run_experiment')
+    pspace_run_cli(
+        Path(__file__).resolve(),
+        f'{curr_file.stem}.PSPACE',
+        f'{curr_file.stem}.run_experiment',
+    )
 
 
 if __name__ == '__main__':
