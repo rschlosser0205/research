@@ -253,9 +253,20 @@ PSPACE = PermutationSpace(
     num_transfers=[1],
     min_return=-100,
     save_weights=False,
-)
-PSPACE.add_filter(lambda num_albums, max_internal_actions:
-    num_albums == 100 or max_internal_actions == 1
+).filter(
+    # factored parameter space
+    lambda num_albums, max_internal_actions:
+        num_albums == 1000 or max_internal_actions == 2
+).filter(
+    # only change internal actions for kb agents
+    lambda agent_type, max_internal_actions:
+        agent_type != 'naive' or max_internal_actions == 1
+).filter(
+    # only run factored space for basic case
+    lambda data_file, num_albums, max_internal_actions:
+        data_file == 'album_date' or (
+            num_albums == 1000 and max_internal_actions == 2
+        )
 )
 
 
