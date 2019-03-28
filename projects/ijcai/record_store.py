@@ -76,28 +76,34 @@ class RecordStore(Environment, RandomMixin):
         raise NotImplementedError()
 
 
-def first_letter(literal):
+def first_letter(attr_dict):
+    type_prop = '<http://xmlns.com/foaf/0.1/type>' # FIXME
+    name_prop = '<http://xmlns.com/foaf/0.1/name>'
+    if name_prop not in attr_dict:
+        return None
+    if type_prop not in attr_dict:
+        return None
+    literal = attr_dict[name_prop]
+    obj_type = attr_dict[type_prop][1:-1].rsplit('/', maxsplit=1)[-1]
     match = re.fullmatch('"[^a-z]*([a-z]).*"(([@^][^"]*)?)', literal, flags=re.IGNORECASE)
-    if match:
-        initial = match.group(1).upper()
-        metadata = match.group(2)
-        return f'"{initial}"{metadata}'
-    else:
+    if not match:
         return None
+    prop = f'<http://xmlns.com/foaf/0.1/{obj_type}/firstLetter>'
+    initial = match.group(1).upper()
+    metadata = match.group(2)
+    return prop, f'"{initial}"{metadata}'
 
 
-def date_to_year(date):
-    if re.fullmatch('"([0-9]{4}).*"(([@^][^"]*)?)', date):
-        return re.sub('^"([0-9]{4}).*"(([@^][^"]*)?)$', r'"\1-01-01"\2', date)
-    else:
+def date_to_decade(attr_dict):
+    release_date_prop = '<http://wikidata.dbpedia.org/ontology/releaseDate>'
+    if release_date_prop not in attr_dict:
         return None
-
-
-def date_to_decade(date):
-    if re.fullmatch('"([0-9]{3}).*"(([@^][^"]*)?)', date):
-        return re.sub('^"([0-9]{3}).*"(([@^][^"]*)?)$', r'"\g<1>0-01-01"\2', date)
-    else:
+    date = attr_dict[release_date_prop]
+    if not re.fullmatch('"([0-9]{3}).*"(([@^][^"]*)?)', date):
         return None
+    release_decade_prop = '<http://wikidata.dbpedia.org/ontology/releaseDecade>'
+    decade = re.sub('^"([0-9]{3}).*"(([@^][^"]*)?)$', r'"\g<1>0-01-01"\2', date)
+    return release_decade_prop, decade
 
 
 INTERNAL_ACTIONS = set([
@@ -120,17 +126,18 @@ def feature_extractor(state, action=None):
         elif external and not attribute.startswith('perceptual_'):
             features.add((attribute, value))
     value = 1 / len(features)
-    return {feature: value for feature in features} 
+    return {feature: value for feature in features}
 
 
 NAME_FIRST_LETTER = SparqlKB.Augment(
-    '<http://xmlns.com/foaf/0.1/name>',
-    '<http://xmlns.com/foaf/0.1/firstLetter>',
+    [
+        '<http://xmlns.com/foaf/0.1/name>',
+        '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>',
+    ],
     first_letter,
 )
 
 DATE_DECADE = SparqlKB.Augment(
-    '<http://wikidata.dbpedia.org/ontology/releaseDate>',
-    '<http://wikidata.dbpedia.org/ontology/releaseDecade>',
+    ['<http://wikidata.dbpedia.org/ontology/releaseDate>'],
     date_to_decade,
 )
