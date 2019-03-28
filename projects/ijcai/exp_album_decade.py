@@ -194,13 +194,14 @@ def run_main_experiment(params, agent):
                 fd.write(str(err))
                 fd.write('\n')
             break
+    save_weights(params, agent)
 
 
 def save_weights(params, agent):
     results_dir = get_results_dir(params)
     if not params.save_weights:
         return
-    weights_file = results_dir.joinpath(filename + '.weights')
+    weights_file = results_dir.joinpath(params.uniqstr_ + '.weights')
     with weights_file.open('w') as fd:
         for action, weights in agent.weights.items():
             fd.write(str(action))
