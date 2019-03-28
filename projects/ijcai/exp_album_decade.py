@@ -19,7 +19,7 @@ from research.rl_agents import epsilon_greedy, TabularQLearningAgent, LinearQLea
 from research.rl_memory import memory_architecture, SparqlKB
 
 from record_store import RecordStore, feature_extractor
-from record_store import DATE_DECADE
+from record_store import DATE_DECADE, NAME_FIRST_LETTER
 
 
 def testing():
@@ -118,28 +118,38 @@ def create_agent(params):
         return create_naive_agent(params)
     elif params.agent_type == 'kb':
         return create_kb_agent(params)
+    raise ValueError(f'unknown agent type {params.agent_type}')
 
 
 def create_naive_env(params, random_seed):
     return RecordStore(
         # record store
-        data_file=params.data_file,
+        data_file='data/' + params.data_file,
         num_albums=params.num_albums,
         # Random Mixin
         random_seed=random_seed,
     )
 
 
+def determine_augment(params):
+    if params.data_file == 'album_date':
+        return [DATE_DECADE]
+    elif params.data_file in ['album_artist', 'album_date_album']:
+        return [NAME_FIRST_LETTER]
+    else:
+        return None
+
+
 def create_kb_env(params, random_seed):
     return memory_architecture(RecordStore)(
         # record store
-        data_file=params.data_file,
+        data_file='data/' + params.data_file,
         num_albums=params.num_albums,
         # memory architecture
         max_internal_actions=params.max_internal_actions,
         knowledge_store=SparqlKB(
             SparqlEndpoint('http://162.233.132.179:8890/sparql'),
-            augments=[DATE_DECADE],
+            augments=determine_augment(params),
         ),
         buf_ignore=['scratch'],
         # Random Mixin
@@ -152,6 +162,7 @@ def create_env(params, random_seed):
         return create_naive_env(params, random_seed)
     elif params.agent_type == 'kb':
         return create_kb_env(params, random_seed)
+    raise ValueError(f'unknown agent type {params.agent_type}')
 
 
 def run_main_experiment(params, agent):
@@ -207,7 +218,7 @@ def run_experiment(params):
 
 
 PSPACE = PermutationSpace(
-    ['random_seed', 'agent_type', 'num_transfers', 'num_albums', 'max_internal_actions'],
+    ['random_seed', 'data_file', 'agent_type', 'num_transfers', 'num_albums', 'max_internal_actions'],
     random_seed=[
         0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
         0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
@@ -232,7 +243,12 @@ PSPACE = PermutationSpace(
     eval_frequency=100,
     num_albums=range(100, 1050, 100),
     max_internal_actions=range(1, 6),
-    data_file='data/album_decade',
+    data_file=[
+        'album_date',
+        'album_artist',
+        'album_date_album',
+        'album_country',
+    ],
     results_folder=date.today().isoformat(),
     num_transfers=[1],
     min_return=-100,
