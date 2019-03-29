@@ -77,7 +77,7 @@ class RecordStore(Environment, RandomMixin):
 
 
 def first_letter(attr_dict):
-    type_prop = '<http://xmlns.com/foaf/0.1/type>' # FIXME
+    type_prop = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
     name_prop = '<http://xmlns.com/foaf/0.1/name>'
     if name_prop not in attr_dict:
         return None
@@ -95,13 +95,13 @@ def first_letter(attr_dict):
 
 
 def date_to_decade(attr_dict):
-    release_date_prop = '<http://wikidata.dbpedia.org/ontology/releaseDate>'
+    release_date_prop = '<http://dbpedia.org/ontology/releaseDate>'
     if release_date_prop not in attr_dict:
         return None
     date = attr_dict[release_date_prop]
     if not re.fullmatch('"([0-9]{3}).*"(([@^][^"]*)?)', date):
         return None
-    release_decade_prop = '<http://wikidata.dbpedia.org/ontology/releaseDecade>'
+    release_decade_prop = '<http://dbpedia.org/ontology/releaseDecade>'
     decade = re.sub('^"([0-9]{3}).*"(([@^][^"]*)?)$', r'"\g<1>0-01-01"\2', date)
     return release_decade_prop, decade
 
@@ -138,6 +138,6 @@ NAME_FIRST_LETTER = SparqlKB.Augment(
 )
 
 DATE_DECADE = SparqlKB.Augment(
-    ['<http://wikidata.dbpedia.org/ontology/releaseDate>'],
+    ['<http://dbpedia.org/ontology/releaseDate>'],
     date_to_decade,
 )

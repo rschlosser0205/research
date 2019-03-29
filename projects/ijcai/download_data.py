@@ -22,11 +22,12 @@ KB_SOURCE = SparqlEndpoint('http://162.233.132.179:8890/sparql')
 KB_ADAPTOR = SparqlKB(KB_SOURCE)
 
 NAME_PROP = '<http://xmlns.com/foaf/0.1/name>'
-RELEASE_DATE_PROP = '<http://wikidata.dbpedia.org/ontology/releaseDate>'
-ALBUM_PROP = '<http://wikidata.dbpedia.org/ontology/album>'
-ARTIST_PROP = '<http://wikidata.dbpedia.org/ontology/artist>'
-HOMETOWN_PROP = '<http://wikidata.dbpedia.org/ontology/hometown>'
-COUNTRY_PROP = '<http://wikidata.dbpedia.org/ontology/country>'
+RELEASE_DATE_PROP = '<http://dbpedia.org/ontology/releaseDate>'
+ALBUM_PROP = '<http://dbpedia.org/ontology/album>'
+ARTIST_PROP = '<http://dbpedia.org/ontology/artist>'
+HOMETOWN_PROP = '<http://dbpedia.org/ontology/hometown>'
+COUNTRY_PROP = '<http://dbpedia.org/ontology/country>'
+TYPE_PROP = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 
 
 def to_sparql_graph(name, edges, start_vars, end_var, augment=None):
