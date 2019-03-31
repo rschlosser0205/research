@@ -10,10 +10,10 @@ from research.knowledge_base import SparqlEndpoint
 from research.rl_memory import SparqlKB
 
 
-from record_store import first_letter, date_to_decade
+from record_store import DATE_DECADE, NAME_FIRST_LETTER
 
-Experiment = namedtuple('Experiment', 'name, edges, start_vars, end_var, transform')
-SparqlGraph = namedtuple('SparqlGraph', 'name, graph, start_vars, end_var, transform, actions')
+Experiment = namedtuple('Experiment', 'name, edges, start_vars, end_var, augment')
+SparqlGraph = namedtuple('SparqlGraph', 'name, graph, start_vars, end_var, augment, actions')
 Action = namedtuple('Action', 'type, subject, property, object, result')
 
 LOGGER = logging.getLogger(__name__)
@@ -22,14 +22,15 @@ KB_SOURCE = SparqlEndpoint('http://162.233.132.179:8890/sparql')
 KB_ADAPTOR = SparqlKB(KB_SOURCE)
 
 NAME_PROP = '<http://xmlns.com/foaf/0.1/name>'
-RELEASE_DATE_PROP = '<http://wikidata.dbpedia.org/ontology/releaseDate>'
-ALBUM_PROP = '<http://wikidata.dbpedia.org/ontology/album>'
-ARTIST_PROP = '<http://wikidata.dbpedia.org/ontology/artist>'
-HOMETOWN_PROP = '<http://wikidata.dbpedia.org/ontology/hometown>'
-COUNTRY_PROP = '<http://wikidata.dbpedia.org/ontology/country>'
+RELEASE_DATE_PROP = '<http://dbpedia.org/ontology/releaseDate>'
+ALBUM_PROP = '<http://dbpedia.org/ontology/album>'
+ARTIST_PROP = '<http://dbpedia.org/ontology/artist>'
+HOMETOWN_PROP = '<http://dbpedia.org/ontology/hometown>'
+COUNTRY_PROP = '<http://dbpedia.org/ontology/country>'
+TYPE_PROP = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 
 
-def to_sparql_graph(name, edges, start_vars, end_var, transform=None):
+def to_sparql_graph(name, edges, start_vars, end_var, augment=None):
     graph = MultiDiGraph()
     for subj, prop, obj in edges:
         graph.add_edge(subj, obj, prop=prop)
@@ -38,7 +39,7 @@ def to_sparql_graph(name, edges, start_vars, end_var, transform=None):
         graph,
         start_vars,
         end_var,
-        transform,
+        augment,
         graph_to_actions(graph, start_vars, end_var),
     )
 
@@ -196,7 +197,7 @@ def download_qa_pairs(sparql_graph):
         for start_var in sparql_graph.start_vars
     )
     for result in all_sparql_results(networkx_to_sparql(sparql_graph)):
-        answer = (result[sparql_graph.end_var].rdf_format, )
+        answer = result[sparql_graph.end_var].rdf_format
         question = set()
         for start_var in sparql_graph.start_vars:
             start_rdf = result[start_var].rdf_format
@@ -244,7 +245,12 @@ def is_answerable(question, answer, sparql_graph):
             result = check_retrieve(cache, step_actions)
         elif action.type == 'use':
             LOGGER.debug(f'checking {cache[action.subject].get(action.property, None)} == {answer}')
-            return cache[action.subject].get(action.property, None) == answer[0]
+            if sparql_graph.augment is None:
+                return cache[action.subject].get(action.property, None) == answer
+            if not all(attr in result for attr in sparql_graph.augment.old_attrs):
+                return None
+            transformed_answer = sparql_graph.augment.transform(cache[action.subject])
+            return transformed_answer is not None
         else:
             raise ValueError(step_actions)
         LOGGER.debug(f'result: {result}')
@@ -260,10 +266,6 @@ def is_valid_qa(sparql_graph, question, answer):
             prop != NAME_PROP or is_unambiguous(obj)
             for prop, obj in question
         )
-        and (
-            sparql_graph.transform is None
-            or sparql_graph.transform(answer[0]) is not None
-        )
         and is_answerable(question, answer, sparql_graph)
     )
 
@@ -276,8 +278,8 @@ def get_valid_data(sparql_graph):
         total += 1
         LOGGER.info(f'verifying {question} -> {answer}')
         if is_valid_qa(sparql_graph, question, answer):
-            if sparql_graph.transform is not None:
-                answer = sparql_graph.transform(answer[0])
+            if sparql_graph.augment is not None:
+                answer = sparql_graph.augment.transform(answer)
             q_list = tuple(sorted(question))
             assert qas.get(q_list, None) in (None, answer)
             if q_list not in qas:
@@ -315,7 +317,7 @@ EXP_RELEASE_DATE = to_sparql_graph(
     ],
     ['album_name'],
     'release_date',
-    date_to_decade,
+    DATE_DECADE,
 )
 
 
@@ -329,7 +331,7 @@ EXP_ARTIST = to_sparql_graph(
     ),
     ['album_name'],
     'artist_name',
-    first_letter,
+    NAME_FIRST_LETTER,
 )
 
 EXP_COUNTRY = to_sparql_graph(
@@ -360,7 +362,7 @@ EXP_OTHER_ALBUM = to_sparql_graph(
     ),
     ['album_name', 'other_release_date'],
     'other_album_name',
-    first_letter,
+    NAME_FIRST_LETTER,
 )
 
 
