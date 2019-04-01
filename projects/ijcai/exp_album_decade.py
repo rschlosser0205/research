@@ -273,8 +273,9 @@ PSPACE = PermutationSpace(
 
 
 def main():
+    curr_file = Path(__file__).resolve()
     pspace_run_cli(
-        Path(__file__).resolve(),
+        curr_file,
         f'{curr_file.stem}.PSPACE',
         f'{curr_file.stem}.run_experiment',
     )
