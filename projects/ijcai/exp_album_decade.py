@@ -219,7 +219,7 @@ def run_experiment(params):
 
 
 PSPACE = PermutationSpace(
-    ['random_seed', 'data_file', 'agent_type', 'num_transfers', 'num_albums', 'max_internal_actions'],
+    ['random_seed', 'data_file', 'num_transfers', 'num_albums', 'max_internal_actions', 'agent_type'],
     random_seed=[
         0.35746869278354254, 0.7368915891545381, 0.03439267552305503, 0.21913569678035283, 0.0664623502695384,
         0.53305059438797, 0.7405341747379695, 0.29303361447547216, 0.014835598224628765, 0.5731489218909421,
@@ -240,35 +240,35 @@ PSPACE = PermutationSpace(
         0.8028611631686207, 0.4945949995685762, 0.22196103928134492, 0.645337288567758, 0.6435668607690285,
         0.5490678941921603, 0.7304438695693786, 0.2603483323175092, 0.7318268751726856, 0.12479832683538916,
     ],
-    num_episodes=10000,
+    num_episodes=150000,
     eval_frequency=100,
     agent_type=['naive', 'kb'],
-    num_albums=range(100, 1050, 100),
+    num_albums=[100, 500, 1000, 5000],
     max_internal_actions=range(1, 6),
     data_file=[
         'album_date',
         'album_artist',
-        'album_date_album',
         'album_country',
+        #'album_date_album',
     ],
     results_folder=date.today().isoformat(),
     num_transfers=[1],
     min_return=-100,
     save_weights=False,
 ).filter(
-    # factored parameter space
-    lambda num_albums, max_internal_actions:
-        num_albums == 5000 or max_internal_actions == 2
-).filter(
     # only change internal actions for kb agents
-    lambda agent_type, max_internal_actions:
-        agent_type != 'naive' or max_internal_actions == 1
+    lambda data_file, agent_type, max_internal_actions:
+        not (data_file == 'album_date' and agent_type == 'naive')
+        or max_internal_actions == 1
 ).filter(
-    # only run factored space for basic case
-    lambda data_file, num_albums, max_internal_actions:
-        data_file == 'album_date' or (
-            num_albums == 5000 and max_internal_actions == 2
-        )
+    # set internal actions appropriately for each experiment
+    lambda data_file, num_albums, max_internal_actions: (
+        data_file != 'album_artist'
+        or (num_albums == 1000 and max_internal_actions == 2)
+    ) and (
+        data_file != 'album_country' 
+        or (num_albums == 1000 and max_internal_actions == 4)
+    )
 )
 
 
