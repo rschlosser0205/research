@@ -120,7 +120,7 @@ def feature_extractor(state, action=None):
     features.add('_bias')
     internal = action is None or action.name in INTERNAL_ACTIONS
     external = action is None or action.name not in INTERNAL_ACTIONS
-    for attribute, value in state.as_dict().items():
+    for attribute, value in state.items():
         if internal:
             features.add(attribute)
         elif external and not attribute.startswith('perceptual_'):
