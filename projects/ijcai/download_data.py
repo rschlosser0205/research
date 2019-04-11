@@ -2,6 +2,7 @@ import sys
 import logging
 from collections import namedtuple
 from itertools import chain
+from os import makedirs
 
 from networkx import MultiDiGraph, DiGraph
 from networkx.algorithms import shortest_path
@@ -66,13 +67,13 @@ def networkx_to_sparql(sparql_graph):
     return '\n'.join(lines)
 
 
-def is_unambiguous(name):
+def is_ambiguous(name):
     query = f'''
         SELECT DISTINCT ?concept WHERE {{
             ?concept {NAME_PROP} {name}
         }} LIMIT 2
     '''
-    return len(list(KB_SOURCE.query_sparql(query))) == 1
+    return len(list(KB_SOURCE.query_sparql(query))) != 1
 
 
 def get_edge_prop(graph, src, dst):
@@ -225,7 +226,7 @@ def check_retrieve(cache, actions):
     return KB_ADAPTOR.retrieve(cache[action.subject][action.property])
 
 
-def is_answerable(question, answer, sparql_graph):
+def get_answer(question, sparql_graph):
     cache = {
         '_environment': dict(question),
     }
@@ -244,53 +245,50 @@ def is_answerable(question, answer, sparql_graph):
         elif action.type == 'retrieve':
             result = check_retrieve(cache, step_actions)
         elif action.type == 'use':
-            LOGGER.debug(f'checking {cache[action.subject].get(action.property, None)} == {answer}')
+            LOGGER.debug(f'applying augment, if any')
             if sparql_graph.augment is None:
-                return cache[action.subject].get(action.property, None) == answer
+                return action.property, cache[action.subject].get(action.property, None)
             if not all(attr in result for attr in sparql_graph.augment.old_attrs):
                 return None
-            transformed_answer = sparql_graph.augment.transform(cache[action.subject])
-            return transformed_answer is not None
+            return sparql_graph.augment.transform(cache[action.subject])
         else:
             raise ValueError(step_actions)
         LOGGER.debug(f'result: {result}')
         if result is None:
-            return False
+            return None
         cache[result_var] = result
     raise ValueError('ran out of actions before use')
-
-
-def is_valid_qa(sparql_graph, question, answer):
-    return (
-        all(
-            prop != NAME_PROP or is_unambiguous(obj)
-            for prop, obj in question
-        )
-        and is_answerable(question, answer, sparql_graph)
-    )
 
 
 def get_valid_data(sparql_graph):
     qas = {}
     total = 0
     valid = 0
-    for question, answer in download_qa_pairs(sparql_graph):
+    for question, _ in download_qa_pairs(sparql_graph):
+        q_list = tuple(sorted(question))
+        if q_list in qas:
+            continue
         total += 1
-        LOGGER.info(f'verifying {question} -> {answer}')
-        if is_valid_qa(sparql_graph, question, answer):
-            if sparql_graph.augment is not None:
-                answer = sparql_graph.augment.transform(answer)
-            q_list = tuple(sorted(question))
-            assert qas.get(q_list, None) in (None, answer)
-            if q_list not in qas:
-                yield question, answer
-                valid += 1
-            qas[q_list] = answer
-            if valid % 100 == 0:
-                LOGGER.info(f'processed {valid} valid albums out of {total} albums')
+        LOGGER.info(f'trying to answer {question}')
+        ambiguous = any(
+            prop == NAME_PROP and is_ambiguous(obj)
+            for prop, obj in question
+        )
+        if ambiguous:
+            qas[q_list] = None
+            continue
+        answer = get_answer(question, sparql_graph)
+        if answer is not None:
+            _, answer = answer
+            yield question, answer
+            valid += 1
+        qas[q_list] = answer
+        if valid % 100 == 0:
+            LOGGER.info(f'processed {valid} valid albums out of {total} albums')
 
 
 def download_data(sparql_graph):
+    makedirs('data', exist_ok=True)
     with open('data/' + sparql_graph.name, 'w') as fd:
         fd.write('(\n')
         for qa_tuple in get_valid_data(sparql_graph):
@@ -375,6 +373,10 @@ def main():
         sparql_graph = EXP_COUNTRY
     elif sys.argv[1] == 'other-album':
         sparql_graph = EXP_OTHER_ALBUM
+    else:
+        print(f'unknown dataset "{sys.argv[1]}"')
+        print(f'possible values are: release-date, artist, country, other-album')
+        exit(1)
     download_data(sparql_graph)
 
 
