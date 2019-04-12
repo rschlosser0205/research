@@ -247,10 +247,16 @@ def get_answer(question, sparql_graph):
         elif action.type == 'use':
             LOGGER.debug(f'applying augment, if any')
             if sparql_graph.augment is None:
-                return action.property, cache[action.subject].get(action.property, None)
-            if not all(attr in result for attr in sparql_graph.augment.old_attrs):
+                answer_prop = action.property,
+                answer = cache[action.subject].get(action.property, None)
+            elif not all(attr in result for attr in sparql_graph.augment.old_attrs):
                 return None
-            return sparql_graph.augment.transform(cache[action.subject])
+            else:
+                answer_prop, answer = sparql_graph.augment.transform(cache[action.subject])
+            if answer is None:
+                return None
+            else:
+                return answer_prop, answer
         else:
             raise ValueError(step_actions)
         LOGGER.debug(f'result: {result}')
