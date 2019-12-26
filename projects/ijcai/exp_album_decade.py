@@ -11,6 +11,7 @@ sys.path.insert(0, str(DIRECTORY))
 
 # pylint: disable = wrong-import-position
 from permspace import PermutationSpace
+from clusterun import sequencerun
 
 from research.knowledge_base import SparqlEndpoint
 from research.pspace_run import pspace_run_cli
@@ -273,12 +274,7 @@ PSPACE = PermutationSpace(
 
 
 def main():
-    curr_file = Path(__file__).resolve()
-    pspace_run_cli(
-        curr_file,
-        f'{curr_file.stem}.PSPACE',
-        f'{curr_file.stem}.run_experiment',
-    )
+    sequencerun(run_experiment, 'PSPACE')
 
 
 if __name__ == '__main__':
