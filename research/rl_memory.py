@@ -452,33 +452,41 @@ class NetworkXKB(KnowledgeStore):
         self.query_results = None
         self.result_index = None
 
-    def store(self, mem_id=None, **kwargs): # noqa: D102
+    def get_activation(self, mem_id, current_time):
+        #returning activation number using time stamp list ????
+        total_act = 0
+        for i in self.graph.nodes[mem_id]['activation']:
+            time_since = current_time - i
+            total_act = time_since**(-0.5) + total_act
+        return total_act
+
+    def store(self,time_stamp, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph:
-            self.graph.add_node(mem_id, activation=0)
+            self.graph.add_node(mem_id, activation=[])
         else:
-            self.activation_fn(self.graph, mem_id)
+            self.activation_fn(self.graph, mem_id, time_stamp)
         for attribute, value in kwargs.items():
             if value not in self.graph:
-                self.graph.add_node(value, activation=0)
+                self.graph.add_node(value, activation=[])
             self.graph.add_edge(mem_id, value, attribute=attribute)
             self.inverted_index[attribute].add(mem_id)
         return True
 
-    def _activate_and_return(self, mem_id):
-        self.activation_fn(self.graph, mem_id)
+    def _activate_and_return(self, time_stamp, mem_id):
+        self.activation_fn(self.graph, mem_id, time_stamp)
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
         return result
 
-    def retrieve(self, mem_id): # noqa: D102
+    def retrieve(self, time_stamp, mem_id): # noqa: D102
         if mem_id not in self.graph:
             return None
-        return self._activate_and_return(mem_id)
+        return self._activate_and_return(time_stamp, mem_id)
 
-    def query(self, attr_vals): # noqa: D102
+    def query(self, time_stamp, attr_vals): # noqa: D102
         # first pass: get candidates with all the attributes
         candidates = set.intersection(*(
             self.inverted_index[attribute] for attribute in attr_vals.keys()
@@ -497,13 +505,13 @@ class NetworkXKB(KnowledgeStore):
             self.result_index = None
             return None
         # final pass: sort results by activation
-        self.query_results = sorted(
+        self.query_results = sorted(          # do we need to use our get activation function here? jk we did woo
             candidates,
-            key=(lambda mem_id: self.graph.nodes[mem_id]['activation']),
+            key=(lambda mem_id: self.get_activation(mem_id, time_stamp)),
             reverse=True,
         )
         self.result_index = 0
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(time_stamp, self.query_results[self.result_index])
 
     @property
     def has_prev_result(self): # noqa: D102
@@ -512,9 +520,9 @@ class NetworkXKB(KnowledgeStore):
             and self.result_index > 0
         )
 
-    def prev_result(self): # noqa: D102
+    def prev_result(self, time_stamp): # noqa: D102
         self.result_index -= 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(time_stamp, self.query_results[self.result_index])
 
     @property
     def has_next_result(self): # noqa: D102
@@ -523,9 +531,9 @@ class NetworkXKB(KnowledgeStore):
             and self.result_index < len(self.query_results) - 1
         )
 
-    def next_result(self): # noqa: D102
+    def next_result(self, time_stamp): # noqa: D102
         self.result_index += 1
-        return self._activate_and_return(self.query_results[self.result_index])
+        return self._activate_and_return(time_stamp, self.query_results[self.result_index])
 
     @staticmethod
     def retrievable(mem_id): # noqa: D102
@@ -567,6 +575,8 @@ class SparqlKB(KnowledgeStore):
 
     def store(self, mem_id=None, **kwargs): # noqa: D102
         raise NotImplementedError()
+
+
 
     def retrieve(self, mem_id): # noqa: D102
         valid_mem_id = (
