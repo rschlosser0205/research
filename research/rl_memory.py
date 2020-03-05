@@ -433,12 +433,12 @@ class NaiveDictKB(KnowledgeStore):
 class NetworkXKB(KnowledgeStore):
     """A NetworkX implementation of a knowledge store."""
 
-    def __init__(self, activation_fn=None):
+    def __init__(self, activation_class=None):
         """Initialize the NetworkXKB."""
         # parameters
-        if activation_fn is None:
+        if activation_class is None:
             activation_fn = (lambda graph, mem_id: None)
-        self.activation_fn = activation_fn
+        self.activation_fn = activation_class.activate()
         # variables
         self.graph = MultiDiGraph()
         self.inverted_index = defaultdict(set)
@@ -455,8 +455,11 @@ class NetworkXKB(KnowledgeStore):
     def get_activation(self, mem_id, current_time):
         #returning activation number using time stamp list ????
         total_act = 0
+        print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
+            print('time_since: ' + str(time_since))
+            print('scale_factor: ' + str(scale_factor))
             total_act = scale_factor * (time_since**(-0.5)) + total_act
         return total_act
 
@@ -673,3 +676,31 @@ class SparqlKB(KnowledgeStore):
     @staticmethod
     def retrievable(mem_id): # noqa: D102
         return isinstance(mem_id, str) and mem_id.startswith('<http')
+
+class Activation_Class:
+
+    def __init__(self, decay_rate, scale_factor, max_steps):
+        self.decay_rate = decay_rate
+        self.scale_factor = scale_factor
+        self.max_steps = max_steps
+
+    def initial_act_fn(self):
+        return []
+
+    def activate(self, graph, mem_id, scale_factor, max_steps, time_stamp):
+
+        # appends time stamp and scale factor
+
+        step_count = 1
+            result = list(graph.successors(mem_id))
+            for i in range(len(result)):
+                if result[i] != mem_id:
+                    graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
+                    result.append(list(graph.successors(result[i])))
+                    result.remove(result[i])
+
+
+
+
+                print('successor of ' + mem_id + " is " + successor)
+                self.activate(graph, successor, scale_factor / 2, max_steps - 1, time_stamp)
