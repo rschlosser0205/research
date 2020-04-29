@@ -438,7 +438,7 @@ class NetworkXKB(KnowledgeStore):
         # parameters
         if activation_class is None:
             activation_fn = (lambda graph, mem_id: None)
-        self.activation_fn = activation_class.activate()
+        self.activation_fn = activation_class.activate
         # variables
         self.graph = MultiDiGraph()
         self.inverted_index = defaultdict(set)
@@ -687,20 +687,22 @@ class Activation_Class:
     def initial_act_fn(self):
         return []
 
-    def activate(self, graph, mem_id, scale_factor, max_steps, time_stamp):
+    def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
+        if scale_factor is None:
+            scale_factor = self.scale_factor
+        if max_steps is None:
+            max_steps = self.max_steps
 
         # appends time stamp and scale factor
 
         step_count = 1
-            result = list(graph.successors(mem_id))
-            for i in range(len(result)):
-                if result[i] != mem_id:
-                    graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
-                    result.append(list(graph.successors(result[i])))
-                    result.remove(result[i])
+        result = list(graph.successors(mem_id))
+        for i in range(len(result)):
+            if result[i] != mem_id:
+                graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
+                result.append(list(graph.successors(result[i])))
+                result.remove(result[i])
 
 
-
-
-                print('successor of ' + mem_id + " is " + successor)
-                self.activate(graph, successor, scale_factor / 2, max_steps - 1, time_stamp)
+                #print('successor of ' + mem_id + " is " + successor)
+                self.activate(graph, result[i], time_stamp, scale_factor / 2, max_steps - 1)
