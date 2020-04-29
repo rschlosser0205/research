@@ -2,6 +2,7 @@ from research.rl_memory import NetworkXKB
 from research.rl_memory import Activation_Class
 def test_networkxkb():
     """Test the NetworkX KnowledgeStore."""
+    #i am making a change
     #
     # def activation_fn(graph, mem_id):
     #         # append to existing activation list
