@@ -697,11 +697,13 @@ class Activation_Class:
 
         step_count = 1
         result = list(graph.successors(mem_id))
+        print(result)
         for i in range(len(result)):
             if result[i] != mem_id:
+                print(result[i])
                 graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
                 result.append(list(graph.successors(result[i])))
-                result.remove(result[i])
+                #result.remove(result[i])
 
 
                 #print('successor of ' + mem_id + " is " + successor)
