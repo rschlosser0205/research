@@ -28,27 +28,28 @@ def test_networkxkb():
 
     store = NetworkXKB(act_class)
 
-    store.store(0, 'cat', is_a='mammal', has='fur', name='cat')
-    store.store(1, 'bear', is_a='mammal', has='fur', name='bear')
-    store.store(2, 'whale', is_a='mammal', lives_in='water')
-    store.store(3, 'whale', name='whale') # this activates whale
-    store.store(4, 'fish', is_a='animal', lives_in='water')
-    store.store(5, 'mammal', has='vertebra', is_a='animal')
+    store.store(0, 'node_cat', is_a='node_mammal', has='node_fur', name='cat')
+    #FIXME add node to beginning of things that are not names!
+    store.store(1, 'node_bear', is_a='node_mammal', has='node_fur', name='bear')
+    store.store(2, 'node_whale', is_a='node_mammal', lives_in='node_water')
+    store.store(3, 'node_whale', name='whale') # this activates whale
+    store.store(4, 'node_fish', is_a='node_animal', lives_in='node_water')
+    store.store(5, 'node_mammal', has='node_vertebra', is_a='node_animal')
     # retrieval
-    result = store.retrieve(6, 'whale')
-    assert sorted(result.items()) == [('is_a', 'mammal'), ('lives_in', 'water'), ('name', 'whale')]
+    result = store.retrieve(6, 'node_whale')
+    assert sorted(result.items()) == [('is_a', 'node_mammal'), ('lives_in', 'node_water'), ('name', 'whale')]
     # failed query
-    result = store.query(7, {'has': 'vertebra', 'lives_in': 'water'})
+    result = store.query(7, {'has': 'node_vertebra', 'lives_in': 'node_water'})
     assert result is None
     # unique query
-    result = store.query(8, {'has': 'vertebra'})
+    result = store.query(8, {'has': 'node_vertebra'})
 
-    assert sorted(result.items()) == [('has', 'vertebra'), ('is_a', 'animal')]
+    assert sorted(result.items()) == [('has', 'node_vertebra'), ('is_a', 'node_animal')]
     # query traversal
     store.store(9, 'cat')
     # at this point, whale has been activated twice (from the store and the retrieve)
     # prints whale activation list
-    print(store.get_activation('water', 11))
+    print(store.get_activation('node_water', 11))
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
     result = store.query(11, {'is_a': 'mammal'})
