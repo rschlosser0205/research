@@ -455,12 +455,14 @@ class NetworkXKB(KnowledgeStore):
     def get_activation(self, mem_id, current_time):
         #returning activation number using time stamp list ????
         total_act = 0
-        #print(mem_id)
+        print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
-            #print('time_since: ' + str(time_since))
-            #print('scale_factor: ' + str(scale_factor))
-            total_act = scale_factor * (time_since**(-0.5)) + total_act
+            if time_since == 0:
+                total_act = scale_factor + total_act
+            else:
+                total_act = scale_factor * (time_since**(-0.5)) + total_act
+        print(total_act)
         return total_act
 
     def store(self, time_stamp, mem_id=None,  **kwargs): # noqa: D102
@@ -468,14 +470,20 @@ class NetworkXKB(KnowledgeStore):
             mem_id = uuid()
         if mem_id not in self.graph:
             self.graph.add_node(mem_id, activation=[])
+            for attribute, value in kwargs.items():
+                if value not in self.graph:
+                    self.graph.add_node(value, activation=[])
+                self.graph.add_edge(mem_id, value, attribute=attribute)
+                self.inverted_index[attribute].add(mem_id)
         else:
+            for attribute, value in kwargs.items():
+                if value not in self.graph:
+                    self.graph.add_node(value, activation=[])
+                self.graph.add_edge(mem_id, value, attribute=attribute)
+                self.inverted_index[attribute].add(mem_id)
             self.activation_fn(self.graph, mem_id, time_stamp)
-        for attribute, value in kwargs.items():
-            if value not in self.graph:
-                self.graph.add_node(value, activation=[])
-            self.graph.add_edge(mem_id, value, attribute=attribute)
-            self.inverted_index[attribute].add(mem_id)
         return True
+
     # we will put the child activation bfs here
     def _activate_and_return(self, time_stamp, mem_id):
         self.activation_fn(self.graph, mem_id, time_stamp)
@@ -684,27 +692,20 @@ class Activation_Class:
         self.scale_factor = scale_factor
         self.max_steps = max_steps
 
-    def initial_act_fn(self):
-        return []
 
     def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
+        if max_steps == 0:
+            return
         if scale_factor is None:
             scale_factor = self.scale_factor
         if max_steps is None:
             max_steps = self.max_steps
 
         # appends time stamp and scale factor
-
-        step_count = 1
+        graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
         #print(result)
         for i in range(len(result)):
             if result[i] != mem_id:
-                #print(result[i])
-                graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
-                result.append(list(graph.successors(result[i])))
-                #result.remove(result[i])
-
-
-                #print('successor of ' + mem_id + " is " + successor)
+                print('successor of ' + mem_id + " is " + result[i])
                 self.activate(graph, result[i], time_stamp, scale_factor / 2, max_steps - 1)

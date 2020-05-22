@@ -50,10 +50,13 @@ def test_networkxkb():
     store.store(9, 'cat')
     # at this point, whale has been activated twice (from the store and the retrieve)
     # prints whale activation list
-    print(store.get_activation('node_whale', 11))
+    print('whale ' + str(store.get_activation('node_whale', 11)))
+    print('cat ' + str(store.get_activation('node_cat', 11)))
+    print('fur ' + str(store.get_activation('node_fur', 11)))
     # while cat has been activated once (from the store)
     # so a search for mammals will give, in order: whale, cat, bear
     result = store.query(11, {'is_a': 'node_mammal'})
+    print(result['name'])
     assert result['name'] == 'whale'
     assert store.has_next_result
 
