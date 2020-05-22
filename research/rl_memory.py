@@ -455,14 +455,14 @@ class NetworkXKB(KnowledgeStore):
     def get_activation(self, mem_id, current_time):
         #returning activation number using time stamp list ????
         total_act = 0
-        print(mem_id)
+        #print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
             if time_since == 0:
                 total_act = scale_factor + total_act
             else:
                 total_act = scale_factor * (time_since**(-0.5)) + total_act
-        print(total_act)
+        #print(total_act)
         return total_act
 
     def store(self, time_stamp, mem_id=None,  **kwargs): # noqa: D102
@@ -687,10 +687,11 @@ class SparqlKB(KnowledgeStore):
 
 class Activation_Class:
 
-    def __init__(self, decay_rate, scale_factor, max_steps):
+    def __init__(self, decay_rate, scale_factor, max_steps, capped):
         self.decay_rate = decay_rate
         self.scale_factor = scale_factor
         self.max_steps = max_steps
+        self.capped = capped
 
 
     def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
@@ -700,12 +701,16 @@ class Activation_Class:
             scale_factor = self.scale_factor
         if max_steps is None:
             max_steps = self.max_steps
-
         # appends time stamp and scale factor
         graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
-        #print(result)
+        # print(result)
+        if self.capped:
+            sharing = 1/len(result)
+        else:
+            sharing = 1
         for i in range(len(result)):
             if result[i] != mem_id:
-                print('successor of ' + mem_id + " is " + result[i])
-                self.activate(graph, result[i], time_stamp, scale_factor / 2, max_steps - 1)
+                # print('successor of ' + mem_id + " is " + result[i])
+                # is sharing * scale_factor / 2 valid? ruth and bryce say yes
+                self.activate(graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
