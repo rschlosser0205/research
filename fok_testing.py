@@ -4,7 +4,7 @@ def test_networkxkb():
     """Test the NetworkX KnowledgeStore."""
 
 
-    act_class = Activation_Class(-0.5, 0.5, 4)
+    act_class = Activation_Class(-0.5, 0.5, 4, False)
 
     store = NetworkXKB(act_class)
 
@@ -60,7 +60,7 @@ def test_networkxkb():
 
 def test_model():
     # play with the parameters of activation class (decay_rate, scale_factor, max_steps, capped)
-    # things to include-- changes in directionality? how 
+    # things to include-- changes in directionality? how
     act_class = Activation_Class(-0.5, 0.5, 4, False)
     store = NetworkXKB(act_class)
 
