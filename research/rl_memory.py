@@ -280,7 +280,7 @@ class KnowledgeStore:
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
 
-    def store(self, mem_id=None, **kwargs):
+    def store(self, time_stamp, mem_id=None, **kwargs):
         """Add knowledge to the KB.
 
         Arguments:
@@ -455,15 +455,15 @@ class NetworkXKB(KnowledgeStore):
     def get_activation(self, mem_id, current_time):
         #returning activation number using time stamp list ????
         total_act = 0
-        print(mem_id)
+        #print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
-            print('time_since: ' + str(time_since))
-            print('scale_factor: ' + str(scale_factor))
+            #print('time_since: ' + str(time_since))
+            #print('scale_factor: ' + str(scale_factor))
             total_act = scale_factor * (time_since**(-0.5)) + total_act
         return total_act
 
-    def store(self,time_stamp, mem_id=None,  **kwargs): # noqa: D102
+    def store(self, time_stamp, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph:
@@ -697,10 +697,10 @@ class Activation_Class:
 
         step_count = 1
         result = list(graph.successors(mem_id))
-        print(result)
+        #print(result)
         for i in range(len(result)):
             if result[i] != mem_id:
-                print(result[i])
+                #print(result[i])
                 graph.nodes[result[i]]['activation'].append((time_stamp, scale_factor**step_count))
                 result.append(list(graph.successors(result[i])))
                 #result.remove(result[i])
