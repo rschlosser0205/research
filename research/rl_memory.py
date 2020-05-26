@@ -459,11 +459,10 @@ class NetworkXKB(KnowledgeStore):
         # print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
-        # FIXME what should happen if time_since is 0?
-            if time_since == 0:
-                total_act = scale_factor + total_act
+            if time_since == 0: # time_since approaches zero
+                total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
             else:
-                total_act = scale_factor * (time_since**(self.activation_class.decay_rate)) + total_act
+                total_act = total_act + scale_factor * (time_since**(self.activation_class.decay_rate))
         #print(total_act)
         return total_act
 
@@ -477,7 +476,7 @@ class NetworkXKB(KnowledgeStore):
                 self.graph.add_node(value, activation=[])
             self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
-                self.graph.add_edge(value, mem_id, attribute='backlink_to')
+                self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
             # FIXME what does inverted_index mean
             self.inverted_index[attribute].add(mem_id)
         # activate node, spread
@@ -692,14 +691,7 @@ class Activation_Class:
         self.max_steps = max_steps
         self.capped = capped
 
-
-    def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
-        if max_steps == 0:
-            return
-        if scale_factor is None:
-            scale_factor = self.scale_factor
-        if max_steps is None:
-            max_steps = self.max_steps
+    def _activate(self, visited, graph, mem_id, time_stamp, scale_factor, max_steps):
         # appends time stamp and scale factor
         graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
@@ -710,8 +702,21 @@ class Activation_Class:
         else:
             sharing = 1
         for i in range(len(result)):
-            # FIXME deal w loops as a result of backlinks (attempt made)
-            if result[i] != mem_id and graph.get_edge_data(mem_id, result[i])[0]['attribute'] != 'backlink_to':
+            if result[i] != mem_id and result[i] not in visited:
                 # print('successor of ' + mem_id + " is " + result[i])
                 # is sharing * scale_factor / 2 valid? ruth and bryce say yes
-                self.activate(graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
+                visited.add(result[i])
+                self._activate(visited, graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
+
+    #FIXME add visited set that is passed into each recursive call and updated as we go along(!)
+    def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
+        if max_steps == 0:
+            return
+        if scale_factor is None:
+            scale_factor = self.scale_factor
+        if max_steps is None:
+            max_steps = self.max_steps
+        visited = {mem_id}
+        self._activate(visited, graph, mem_id, time_stamp, scale_factor, max_steps)
+
+
