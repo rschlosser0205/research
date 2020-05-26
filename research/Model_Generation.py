@@ -47,6 +47,7 @@ class Model_generation:
                     for cap in self.act_capped:
                         for link in self.backlinks:
                             for rep in self.representation:
+                                print('decay rate = ' + str(rate) + ' scale factor = ' + str(scale) + ' max steps = ' +  str(step) + ' backlinks = ' + str(link) + ' representation = ' + str(rep))
                                 store = NetworkXKB(Activation_Class(rate, scale, step, cap))
                                 self.create_graph(store, link, rep)
 

@@ -438,6 +438,7 @@ class NetworkXKB(KnowledgeStore):
         # parameters
         if activation_class is None:
             activation_fn = (lambda graph, mem_id: None)
+        self.activation_class = activation_class
         self.activation_fn = activation_class.activate
         # variables
         self.graph = MultiDiGraph()
@@ -462,8 +463,7 @@ class NetworkXKB(KnowledgeStore):
             if time_since == 0:
                 total_act = scale_factor + total_act
             else:
-                # FIXME -0.5 is the decay_rate, but how to get that value up here since it is defined in the activation class?
-                total_act = scale_factor * (time_since**(-0.5)) + total_act
+                total_act = scale_factor * (time_since**(self.activation_class.decay_rate)) + total_act
         #print(total_act)
         return total_act
 
@@ -705,13 +705,13 @@ class Activation_Class:
         result = list(graph.successors(mem_id))
 
         # FIXME activation is very diluted according to this if we allow backlinks
-        if self.capped:
+        if self.capped and len(result) > 0:
             sharing = 1/len(result)
         else:
             sharing = 1
         for i in range(len(result)):
             # FIXME deal w loops as a result of backlinks (attempt made)
-            if result[i] != mem_id and self.graph.get_edge_data(mem_id, result[i])[0]['attribute'] != 'backlink_to':
+            if result[i] != mem_id and graph.get_edge_data(mem_id, result[i])[0]['attribute'] != 'backlink_to':
                 # print('successor of ' + mem_id + " is " + result[i])
                 # is sharing * scale_factor / 2 valid? ruth and bryce say yes
                 self.activate(graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
