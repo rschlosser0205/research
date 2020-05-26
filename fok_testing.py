@@ -17,6 +17,7 @@ def test_networkxkb():
     store.store(5, 'node_mammal', has='node_vertebra', is_a='node_animal')
     # retrieval
     result = store.retrieve(6, 'node_whale')
+    print(sorted(result.items()))
     assert sorted(result.items()) == [('is_a', 'node_mammal'), ('lives_in', 'node_water'), ('name', 'whale')]
     # failed query
     result = store.query(7, {'has': 'node_vertebra', 'lives_in': 'node_water'})
@@ -60,7 +61,7 @@ def test_networkxkb():
     print('whale ' + str(store.get_activation('node_whale', 12)))
 
 
-
+# this function moved to Model_Generation.py
 def test_model(act_decay_rate, act_scale_factor, act_max_steps, act_capped, backlinks, representation):
     # play with the parameters of activation class (decay_rate, scale_factor, max_steps, capped)
     # things to include-- changes in directionality? BACKLINKS VS NONE
@@ -89,5 +90,5 @@ def test_model(act_decay_rate, act_scale_factor, act_max_steps, act_capped, back
     store.store(1, 'CD', first='C', second='D')
 
 
-# test_networkxkb()
-test_model(-0.5, 0.5, 4, False, False, 2)
+test_networkxkb()
+#test_model(-0.5, 0.5, 4, False, False, 2)

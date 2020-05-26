@@ -472,11 +472,11 @@ class NetworkXKB(KnowledgeStore):
             mem_id = uuid()
         if mem_id not in self.graph: # create node and attributes if needed
             self.graph.add_node(mem_id, activation=[])
-            for attribute, value in kwargs.items():
-                if value not in self.graph:
-                    self.graph.add_node(value, activation=[])
-                self.graph.add_edge(mem_id, value, attribute=attribute)
-                self.inverted_index[attribute].add(mem_id)
+        for attribute, value in kwargs.items():
+            if value not in self.graph:
+              self.graph.add_node(value, activation=[])
+            self.graph.add_edge(mem_id, value, attribute=attribute)
+            self.inverted_index[attribute].add(mem_id)
         # activate node, spread
         self.activation_fn(self.graph, mem_id, time_stamp)
         return True
