@@ -467,15 +467,18 @@ class NetworkXKB(KnowledgeStore):
         #print(total_act)
         return total_act
 
-    def store(self, time_stamp, mem_id=None,  **kwargs): # noqa: D102
+    def store(self, time_stamp, backlinks, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph: # create node and attributes if needed
             self.graph.add_node(mem_id, activation=[])
         for attribute, value in kwargs.items():
             if value not in self.graph:
-              self.graph.add_node(value, activation=[])
+                self.graph.add_node(value, activation=[])
             self.graph.add_edge(mem_id, value, attribute=attribute)
+            if backlinks:
+                self.graph.add_edge(value, mem_id, attribute='backlink_to')
+            # FIXME what does inverted_index mean
             self.inverted_index[attribute].add(mem_id)
         # activate node, spread
         self.activation_fn(self.graph, mem_id, time_stamp)
@@ -700,13 +703,15 @@ class Activation_Class:
         # appends time stamp and scale factor
         graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
-        # print(result)
+
+        # FIXME activation is very diluted according to this if we allow backlinks
         if self.capped:
             sharing = 1/len(result)
         else:
             sharing = 1
         for i in range(len(result)):
-            if result[i] != mem_id:
+            # FIXME deal w loops as a result of backlinks (attempt made)
+            if result[i] != mem_id and self.graph.get_edge_data(mem_id, result[i])[0]['attribute'] != 'backlink_to':
                 # print('successor of ' + mem_id + " is " + result[i])
                 # is sharing * scale_factor / 2 valid? ruth and bryce say yes
                 self.activate(graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
