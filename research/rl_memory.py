@@ -453,14 +453,16 @@ class NetworkXKB(KnowledgeStore):
         self.result_index = None
 
     def get_activation(self, mem_id, current_time):
-        #returning activation number using time stamp list ????
+        # returning activation number using time stamp list ????
         total_act = 0
-        #print(mem_id)
+        # print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
+        # FIXME what should happen if time_since is 0?
             if time_since == 0:
                 total_act = scale_factor + total_act
             else:
+                # FIXME -0.5 is the decay_rate, but how to get that value up here since it is defined in the activation class?
                 total_act = scale_factor * (time_since**(-0.5)) + total_act
         #print(total_act)
         return total_act
@@ -468,23 +470,17 @@ class NetworkXKB(KnowledgeStore):
     def store(self, time_stamp, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
-        if mem_id not in self.graph:
+        if mem_id not in self.graph: # create node and attributes if needed
             self.graph.add_node(mem_id, activation=[])
             for attribute, value in kwargs.items():
                 if value not in self.graph:
                     self.graph.add_node(value, activation=[])
                 self.graph.add_edge(mem_id, value, attribute=attribute)
                 self.inverted_index[attribute].add(mem_id)
-        else:
-            for attribute, value in kwargs.items():
-                if value not in self.graph:
-                    self.graph.add_node(value, activation=[])
-                self.graph.add_edge(mem_id, value, attribute=attribute)
-                self.inverted_index[attribute].add(mem_id)
-            self.activation_fn(self.graph, mem_id, time_stamp)
+        # activate node, spread
+        self.activation_fn(self.graph, mem_id, time_stamp)
         return True
 
-    # we will put the child activation bfs here
     def _activate_and_return(self, time_stamp, mem_id):
         self.activation_fn(self.graph, mem_id, time_stamp)
         result = TreeMultiMap()
@@ -686,7 +682,7 @@ class SparqlKB(KnowledgeStore):
         return isinstance(mem_id, str) and mem_id.startswith('<http')
 
 class Activation_Class:
-
+    # FIXME will need to account for backlinks/not get stuck in loops
     def __init__(self, decay_rate, scale_factor, max_steps, capped):
         self.decay_rate = decay_rate
         self.scale_factor = scale_factor
