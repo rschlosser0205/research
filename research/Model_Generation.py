@@ -15,20 +15,20 @@ class Model_generation:
     # FIXME add a function that takes in a store and the rep parameters. this function will create the graph
     # where does this function go? in here
     # this function will accomplish store.store(...) * 4 or whatever
-    def create_graph(self, store, backlinks):
-        if self.representation == 1:
+    def create_graph(self, store, backlinks, representation):
+        if representation == 1:
             # one level (?) representation
             store.store(0, backlinks, 'A', goes_to='B')
             store.store(0, backlinks, 'A', goes_to='D')
             store.store(0, backlinks, 'C', goes_to='B')
             store.store(0, backlinks, 'C', goes_to='D')
-        elif self.representation == 2:
+        elif representation == 2:
             # two-level representation
             store.store(0, backlinks, 'AB', first='A', second='B')
             store.store(1, backlinks, 'AD', first='A', second='D')
             store.store(1, backlinks, 'CB', first='C', second='B')
             store.store(1, backlinks, 'CD', first='C', second='D')
-        elif self.representation == 3:
+        elif representation == 3:
             # three levels (type=pairs is a shared child of AB and CD)
             # FIXME add other representations
             store.store(0, backlinks, 'AB', first='A', second='B', type='pairs')
@@ -48,7 +48,7 @@ class Model_generation:
                         for link in self.backlinks:
                             for rep in self.representation:
                                 store = NetworkXKB(Activation_Class(rate, scale, step, cap))
-                                self.create_graph(store)
+                                self.create_graph(store, link, rep)
 
 
 
@@ -59,4 +59,5 @@ class Model_generation:
         # get from A to B in rep 1
         store.query(1, {'goes_to': 'B'})
 
-test = Model_generation()
+test = Model_generation([-0.5, -0.25], [0.5, 0.25], [2, 3], [True, False], [True, False], [1, 2, 3])
+test.test_model()
