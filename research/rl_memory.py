@@ -487,8 +487,9 @@ class NetworkXKB(KnowledgeStore):
         self.activation_fn(self.graph, mem_id, time_stamp)
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
+            # print(mem_id + ' ' + data['attribute'])
             result.add(data['attribute'], value)
-            result.add('mem_id', mem_id)
+        result.add('node_id', mem_id)
         return result
 
     def retrieve(self, time_stamp, mem_id): # noqa: D102

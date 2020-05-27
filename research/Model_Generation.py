@@ -16,10 +16,11 @@ class Model_generation:
     def create_graph(self, store, backlinks, representation):
         if representation == 1:
             # one level (?) representation
-            store.store(0, backlinks, 'A', goes_to='B')
-            store.store(1, backlinks, 'A', goes_to='D')
-            store.store(1, backlinks, 'C', goes_to='B')
-            store.store(1, backlinks, 'C', goes_to='D')
+            # hardcode in edge labels for specific values
+            store.store(0, backlinks, 'A', goes_to_b='B')
+            store.store(1, backlinks, 'A', goes_to_d='D')
+            store.store(1, backlinks, 'C', goes_to_b='B')
+            store.store(1, backlinks, 'C', goes_to_d='D')
 
         elif representation == 2:
             # two-level representation
@@ -38,20 +39,20 @@ class Model_generation:
     def query_test(self, representation, store):
         # get from A to B in each representation and then print out the result
         if representation == 1:
-            result = store.query(2, {'goes_to': 'B'})
+            # FIXME loop???? through several versions of goes_to_num????
+            result = store.query(2, {'goes_to_b': 'B'})
+            final = result['node_id']
         elif representation == 2:
-            result = store.query(2, {'first': 'A'}) # this should give AB or AC
-            # FIXME how to get 'second' term?
+            result = store.query(2, {'first': 'A'}) # this should give AB or AD
+            final = result['second']
         elif representation == 3:
-            result = store.query(2, {'first': 'A'})  # this should give AB or AC
-            # FIXME how to get 'second' term?
-        # FIXME make this work so u can print ids
-        print(result)
+            result = store.query(2, {'first': 'A'})  # this should give AB or AD
+            final = result['second']
+        print('query first returns: ' + final)
+        print('')
 
     def test_model(self):
         # play with the parameters of activation class (decay_rate, scale_factor, max_steps, capped)
-        # things to include-- BACKLINKS VS NONE
-        # loops
 
         for rate in self.act_decay_rate:
             for scale in self.act_scale_factor:
@@ -59,9 +60,10 @@ class Model_generation:
                     for cap in self.act_capped:
                         for link in self.backlinks:
                             for rep in self.representation:
-                                print('decay rate = ' + str(rate) + ' scale factor = ' + str(scale) + ' max steps = ' +  str(step) + ' backlinks = ' + str(link) + ' representation = ' + str(rep))
+                                print('decay rate = ' + str(rate) + ', scale factor = ' + str(scale) + ', max steps = ' +  str(step) + ', backlinks = ' + str(link) + ', representation = ' + str(rep))
                                 store = NetworkXKB(Activation_Class(rate, scale, step, cap))
                                 self.create_graph(store, link, rep)
+                                self.query_test(rep, store)
 
 
 
