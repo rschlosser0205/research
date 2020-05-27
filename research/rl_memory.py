@@ -477,7 +477,7 @@ class NetworkXKB(KnowledgeStore):
             self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
                 self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
-            # FIXME what does inverted_index mean
+            # FIXME what does inverted_index mean (a technique for speeding up search)
             self.inverted_index[attribute].add(mem_id)
         # activate node, spread
         self.activation_fn(self.graph, mem_id, time_stamp)
@@ -488,6 +488,7 @@ class NetworkXKB(KnowledgeStore):
         result = TreeMultiMap()
         for _, value, data in self.graph.out_edges(mem_id, data=True):
             result.add(data['attribute'], value)
+            result.add('mem_id', mem_id)
         return result
 
     def retrieve(self, time_stamp, mem_id): # noqa: D102
