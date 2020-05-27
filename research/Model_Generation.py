@@ -39,7 +39,7 @@ class Model_generation:
     def query_test(self, representation, store):
         # get from A to B in each representation and then print out the result
         if representation == 1:
-            # FIXME loop???? through several versions of goes_to_num????
+            # specifying the value at the end of an edge protects from duplicate edges being added to the result map.
             result = store.query(2, {'goes_to_b': 'B'})
             final = result['node_id']
         elif representation == 2:
@@ -60,7 +60,7 @@ class Model_generation:
                     for cap in self.act_capped:
                         for link in self.backlinks:
                             for rep in self.representation:
-                                print('decay rate = ' + str(rate) + ', scale factor = ' + str(scale) + ', max steps = ' +  str(step) + ', backlinks = ' + str(link) + ', representation = ' + str(rep))
+                                print('decay rate = ' + str(rate) + ', scale factor = ' + str(scale) + ', max steps = ' +  str(step) + ', capped = ' + str(cap) + ', backlinks = ' + str(link) + ', representation = ' + str(rep))
                                 store = NetworkXKB(Activation_Class(rate, scale, step, cap))
                                 self.create_graph(store, link, rep)
                                 self.query_test(rep, store)
