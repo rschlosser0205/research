@@ -459,7 +459,9 @@ class NetworkXKB(KnowledgeStore):
         # print(mem_id)
         for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
-            if time_since == 0: # time_since approaches zero
+            if time_since < 0: # time travel: ignore this tuple
+                continue
+            elif time_since == 0: # time_since approaches zero
                 total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
             else:
                 total_act = total_act + scale_factor * (time_since**(self.activation_class.decay_rate))
@@ -474,7 +476,8 @@ class NetworkXKB(KnowledgeStore):
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=[])
-            self.graph.add_edge(mem_id, value, attribute=attribute)
+            if attribute not in self.graph.out_edges(mem_id, data=True):
+                self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
                 self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
             # FIXED what does inverted_index mean (a technique for speeding up search)
@@ -686,7 +689,6 @@ class SparqlKB(KnowledgeStore):
         return isinstance(mem_id, str) and mem_id.startswith('<http')
 
 class ActivationClass:
-    # FIXME will need to account for backlinks/not get stuck in loops
     def __init__(self, decay_rate, scale_factor, max_steps, capped):
         self.decay_rate = decay_rate
         self.scale_factor = scale_factor
@@ -698,7 +700,7 @@ class ActivationClass:
         graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
 
-        # FIXME activation is very diluted according to this if we allow backlinks
+        # FIXME? activation is very diluted according to this if we allow backlinks
         if self.capped and len(result) > 0:
             sharing = 1/len(result)
         else:
@@ -710,7 +712,6 @@ class ActivationClass:
                 visited.add(result[i])
                 self._activate(visited, graph, result[i], time_stamp, sharing * scale_factor / 2, max_steps - 1)
 
-    #FIXME add visited set that is passed into each recursive call and updated as we go along(!)
     def activate(self, graph, mem_id, time_stamp, scale_factor=None, max_steps=None):
         if max_steps == 0:
             return
