@@ -477,7 +477,7 @@ class NetworkXKB(KnowledgeStore):
             self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
                 self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
-            # FIXME what does inverted_index mean (a technique for speeding up search)
+            # FIXED what does inverted_index mean (a technique for speeding up search)
             self.inverted_index[attribute].add(mem_id)
         # activate node, spread
         self.activation_fn(self.graph, mem_id, time_stamp)
@@ -685,7 +685,7 @@ class SparqlKB(KnowledgeStore):
     def retrievable(mem_id): # noqa: D102
         return isinstance(mem_id, str) and mem_id.startswith('<http')
 
-class Activation_Class:
+class ActivationClass:
     # FIXME will need to account for backlinks/not get stuck in loops
     def __init__(self, decay_rate, scale_factor, max_steps, capped):
         self.decay_rate = decay_rate
