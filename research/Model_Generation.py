@@ -2,7 +2,7 @@ from itertools import product
 
 from research.rl_memory import ActivationClass, NetworkXKB
 
-
+# this function is specific to the AB- Task
 def create_edge(store, time, backlinks, representation, src, dst):
     # src and dst would be either 'A', 'B', 'C', 'D'
     if representation == 'direct':
@@ -14,13 +14,13 @@ def create_edge(store, time, backlinks, representation, src, dst):
         # three levels (type=pairs is a shared child of AB and CD)
         store.store(time, backlinks, src + dst, first=src, second=dst, type='pairs')
 
-# comment out the two unused pairs!
+# This function is specific to the AB- task
 def create_graph(store, backlinks, representation, paradigm):
     # paradigm is either 'ABAB', 'ABAD', 'ABCB', 'ABCD'
     create_edge(store, 0, backlinks, representation, 'A', 'B')
     create_edge(store, 1, backlinks, representation, paradigm[2], paradigm[3])
 
-# FIXME refactor?
+# this function is specific to the AB- task
 def query_test(representation, store):
     # get from A to B in each representation and then print out the result
     if representation == 'direct':
@@ -35,14 +35,17 @@ def query_test(representation, store):
         final = result['second']
     print('query first returns: ' + final)
 
+
+
+
 def test_model():
-    act_decay_rate = [-0.5, -0.25]
-    act_scale_factor = [0.5, 0.25]
-    act_max_steps = [2, 3]
-    act_capped = [True, False]
+    act_decay_rate = [-0.42, -0.41]
+    act_scale_factor = [0.5]
+    act_max_steps = [2]
+    act_capped = [False, True]
     backlinks = [True, False]
-    representation = ['direct', 'pairs', 'types']
-    paradigm = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
+    representation = ['pairs', 'types']
+    paradigm = ['ABAD', 'ABAB']
 
     generator = product(
         act_decay_rate,
@@ -57,14 +60,31 @@ def test_model():
     for rate, scale, step, cap, link, rep, paradigm in generator:
         print(', '.join([
             'decay rate = ' + str(rate),
-            'scale factor = ' + str(scale),
-            'max steps = ' + str(step),
+            # 'scale factor = ' + str(scale),
+            # 'max steps = ' + str(step),
             'capped = ' + str(cap),
             'backlinks = ' + str(link),
-            'representation = ' + str(rep),
+            'representation = ' + rep,
+            'paradigm = ' + paradigm
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         create_graph(store, link, rep, paradigm)
         query_test(rep, store)
+        print('')
+
+# general method! but is it useful?
+def calculate_fok(store, cue, target, method):
+    if method == 'cue':
+        return store.graph.nodes[cue]['activation']
+    elif method == 'target':
+        # return the activation of what was returned by the query
+        return store.graph.nodes[target]['activation']
+
+def testy (task, fok_method):
+    if task == 'AB-':
+        test_model(fok_method)
+
+
+
 
 test_model()
