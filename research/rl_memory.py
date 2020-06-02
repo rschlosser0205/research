@@ -465,7 +465,7 @@ class NetworkXKB(KnowledgeStore):
                 total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
             else:
                 total_act = total_act + scale_factor * (time_since**(self.activation_class.decay_rate))
-        #print(total_act)
+        # print(total_act)
         return total_act
 
     def store(self, time_stamp, backlinks, mem_id=None,  **kwargs): # noqa: D102
@@ -476,8 +476,17 @@ class NetworkXKB(KnowledgeStore):
         for attribute, value in kwargs.items():
             if value not in self.graph:
                 self.graph.add_node(value, activation=[])
-            if attribute not in self.graph.out_edges(mem_id, data=True):
-                self.graph.add_edge(mem_id, value, attribute=attribute)
+            edges = self.graph.out_edges(mem_id, data=True)
+            for (src, dest, attribute_dict) in edges:
+                if dest == value:
+                    for key in attribute_dict:
+                        if attribute_dict[key] == attribute:
+                            # edge already exists, do not create edge
+                            # activate node, spread
+                            self.activation_fn(self.graph, mem_id, time_stamp)
+                            return True
+            # edge does not exist, so create it
+            self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
                 self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
             # FIXED what does inverted_index mean (a technique for speeding up search)
