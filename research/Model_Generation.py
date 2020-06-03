@@ -18,7 +18,7 @@ def create_edge(store, time, backlinks, representation, src, dst):
         store.store(time, backlinks, src, **{'goes_to_' + dst.lower(): dst, })
     elif representation == 'pairs':
         # two-level representation
-        store.store(time, backlinks, src + dst, first=src, second=dst)
+        store.store(time, backlinks, src + dst + str(time), first=src, second=dst)
     elif representation == 'types':
         # three levels (type=pairs is a shared child of AB and CD)
         store.store(time, backlinks, src + dst, first=src, second=dst, type='pairs')
@@ -59,8 +59,8 @@ def test_model(fok_method):
     act_max_steps = [2]
     act_capped = [False, True]
     backlinks = [True, False]
-    representation = ['pairs', 'types', 'direct']
-    paradigm = ['ABAD', 'ABAB', 'ABCB', 'ABCD']
+    representation = ['pairs', 'types']
+    paradigm = ['ABAB']
 
     generator = product(
         act_decay_rate,
@@ -74,11 +74,11 @@ def test_model(fok_method):
 
     for rate, scale, step, cap, link, rep, paradigm in generator:
         print(', '.join([
-            'decay rate = ' + str(rate),
+            # 'decay rate = ' + str(rate),
             # 'scale factor = ' + str(scale),
             # 'max steps = ' + str(step),
-            'capped = ' + str(cap),
-            'backlinks = ' + str(link),
+            # 'capped = ' + str(cap),
+            # 'backlinks = ' + str(link),
             'representation = ' + rep,
             'paradigm = ' + paradigm
         ]))
@@ -89,7 +89,7 @@ def test_model(fok_method):
 
 
 
-def testy (tasks, fok_method):
+def testy(tasks, fok_method):
     for task in tasks:
         if task == 'AB-':
             for method in fok_method:
