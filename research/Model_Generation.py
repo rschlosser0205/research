@@ -18,6 +18,8 @@ def determine_fok_function(method):
         return outgoing_edges_fok
     elif method == 'total edges':
         return total_edges_fok
+    elif method == 'act by edges':
+        return act_by_edges_fok
 
 
 
@@ -40,6 +42,9 @@ def outgoing_edges_fok(store, cue, target, query_time):
 def total_edges_fok(store, cue, target, query_time):
     return len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
 
+def act_by_edges_fok(store, cue, target, query_time):
+    return (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))) * store.get_activation(cue, (query_time - 0.0001))
+
 # this function is specific to the AB- Task
 def create_edge(store, time, backlinks, representation, src, dst):
     # src and dst would be either 'A', 'B', 'C', 'D'
@@ -56,10 +61,10 @@ def create_edge(store, time, backlinks, representation, src, dst):
 
 
 # This function is specific to the AB- task
-def create_graph(store, backlinks, representation, paradigm):
+def create_graph(store, backlinks, representation, paradigm, store_time):
     # paradigm is either 'ABAB', 'ABAD', 'ABCB', 'ABCD'
-    create_edge(store, 0, backlinks, representation, 'A', 'B')
-    create_edge(store, 1, backlinks, representation, paradigm[2], paradigm[3])
+    create_edge(store, store_time, backlinks, representation, 'A', 'B')
+    create_edge(store, store_time+1, backlinks, representation, paradigm[2], paradigm[3])
 
 
 
@@ -83,9 +88,10 @@ def test_model():
     act_capped = [False, True]
     backlinks = [True, False]
     representation = ['pairs', 'types']
-    paradigm = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
-    fok_method = ['total edges']
-
+    fok_method = ['act by edges']
+    paradigms = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
+    store_time = 0
+    query_time = 2
 
 
     generator = product(
@@ -95,10 +101,10 @@ def test_model():
         act_capped,
         backlinks,
         representation,
-        paradigm,
-        fok_method
+        fok_method,
+        paradigms,
     )
-    for rate, scale, step, cap, link, rep, paradigm, fok_method in generator:
+    for rate, scale, step, cap, link, rep, fok_method, paradigm in generator:
         print(', '.join([
             # 'decay rate = ' + str(rate),
             # 'scale factor = ' + str(scale),
@@ -111,14 +117,14 @@ def test_model():
         ]))
 
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        create_graph(store, link, rep, paradigm)
+        create_graph(store, link, rep, paradigm, store_time)
 
         attr, cue, result_attr = determine_query_parameters(rep)
-        result = store.query(2, {attr: cue})[result_attr]
+        result = store.query(query_time, {attr: cue})[result_attr]
         print('query first returns: ' + result)
 
         fok_function = determine_fok_function(fok_method)
-        fok = fok_function(store, cue, result, 2)
+        fok = fok_function(store, cue, result, query_time)
         print('fok = ' + str(fok))
 
 
