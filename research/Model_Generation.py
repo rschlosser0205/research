@@ -69,16 +69,40 @@ def set_up_ab(store, backlinks, representation, paradigm, store_time):
     create_edge(store, store_time+1, backlinks, representation, paradigm[2], paradigm[3])
 
 
+# should take the task, the different paradigms/questions, and the representation
 def create_knowledge_list(task, rep, paradigm):
+    knowledge_list = []
+    if task == 'AB-':
+        for i in range(0, 2, 2):
+            # determine attributes
+            if rep == 'direct':
+                attributes = [('goes_to_' + paradigm[i+1].lower(), paradigm[i+1])]
+                knowledge_list.append([paradigm[i], attributes])
+            elif rep == 'pairs':
+                # print(rep)
+                attributes = [('first', paradigm[i]), ('second', paradigm[i+1])]
+                knowledge_list.append([paradigm[i]+paradigm[i+1], attributes])
+            elif rep == 'types':
+                attributes = [('first', paradigm[i]), ('second', paradigm[i+1]), ('type', 'pairs')]
+                knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
+    return knowledge_list
+    # elif task == 'jeopardy':
+        # use dbpedia? or some other thing to generate background knowledge???
 
 
-def populate(store, link, store_time, knowledge_list):
+
+
+
+
+def populate(store, link, store_time, task, rep, paradigm):
+    knowledge_list = create_knowledge_list(task, rep, paradigm)
     for node in knowledge_list:
         mem_id = node[0]
         attributes = {}
         for (attr, val) in node[1]:
             attributes[attr] = val
-        store.store(store_time, link, mem_id, attributes)
+        store.store(store_time, link, mem_id, **attributes)
+        store_time+=1
 
 
 
@@ -86,13 +110,13 @@ def populate(store, link, store_time, knowledge_list):
 # returns a dictionary of query terms and a string that specifies what to ask of the result.
 def determine_query_parameters(question):
     if question == 'direct':
-        return ({'goes_to_b': 'B'}, 'node_id')
+        return {'goes_to_b': 'B'}, 'node_id'
     elif question == 'pairs':
-        return ({'first': 'A'}, 'second')
+        return {'first': 'A'}, 'second'
     elif question == 'types':
-        return ({'first': 'A'}, 'second')
+        return {'first': 'A'}, 'second'
     elif question == 'jeopardy_q_grid':
-        return ({'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name')
+        return {'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name'
 
 
 
@@ -109,6 +133,7 @@ def test_model():
     paradigms = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
     store_time = 0
     query_time = 2
+    tasks = ['AB-']
 
 
     generator = product(
@@ -120,8 +145,9 @@ def test_model():
         representation,
         fok_method,
         paradigms,
+        tasks
     )
-    for rate, scale, step, cap, link, rep, fok_method, paradigm in generator:
+    for rate, scale, step, cap, link, rep, fok_method, paradigm, task in generator:
         print(', '.join([
             # 'decay rate = ' + str(rate),
             # 'scale factor = ' + str(scale),
@@ -130,11 +156,12 @@ def test_model():
             'backlinks = ' + str(link),
             'representation = ' + rep,
             'paradigm = ' + paradigm,
-            'fok_method = ' + fok_method
+            'fok_method = ' + fok_method,
+            'task = ' + task
         ]))
 
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        populate(store, link, rep, paradigm, store_time)
+        populate(store, link, store_time, task, rep, paradigm)
 
         terms, result_attr = determine_query_parameters(rep)
         result = store.query(query_time, terms)[result_attr]
@@ -142,8 +169,8 @@ def test_model():
 
         fok_function = determine_fok_function(fok_method)
         # what does cue mean in a jeopardy scenario?
-        fok = fok_function(store, cue, result, query_time)
-        print('fok = ' + str(fok))
+        #fok = fok_function(store, cue, result, query_time)
+        #print('fok = ' + str(fok))
 
 
 
