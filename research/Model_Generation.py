@@ -4,7 +4,11 @@ from research.rl_memory import ActivationClass, NetworkXKB
 
 
 
-# general method! but is it useful? returns activations right before the query
+
+
+
+
+
 def determine_fok_function(method):
     if method == 'cue':
         return cue_fok
@@ -20,8 +24,6 @@ def determine_fok_function(method):
         return total_edges_fok
     elif method == 'act by edges':
         return act_by_edges_fok
-
-
 
 
 def cue_fok(store, cue, target, query_time):
@@ -60,23 +62,38 @@ def create_edge(store, time, backlinks, representation, src, dst):
 
 
 
-# This function is specific to the AB- task
-def create_graph(store, backlinks, representation, paradigm, store_time):
+# this function is specific to the AB- task
+def set_up_ab(store, backlinks, representation, paradigm, store_time):
     # paradigm is either 'ABAB', 'ABAD', 'ABCB', 'ABCD'
     create_edge(store, store_time, backlinks, representation, 'A', 'B')
     create_edge(store, store_time+1, backlinks, representation, paradigm[2], paradigm[3])
 
 
+def create_knowledge_list(task, rep, paradigm):
+
+
+def populate(store, link, store_time, knowledge_list):
+    for node in knowledge_list:
+        mem_id = node[0]
+        attributes = {}
+        for (attr, val) in node[1]:
+            attributes[attr] = val
+        store.store(store_time, link, mem_id, attributes)
 
 
 
-def determine_query_parameters(representation):
-    if representation == 'direct':
-        return ('goes_to_b', 'B', 'node_id')
-    elif representation == 'pairs':
-        return ('first', 'A', 'second')
-    elif representation == 'types':
-        return ('first', 'A', 'second')
+
+# returns a dictionary of query terms and a string that specifies what to ask of the result.
+def determine_query_parameters(question):
+    if question == 'direct':
+        return ({'goes_to_b': 'B'}, 'node_id')
+    elif question == 'pairs':
+        return ({'first': 'A'}, 'second')
+    elif question == 'types':
+        return ({'first': 'A'}, 'second')
+    elif question == 'jeopardy_q_grid':
+        return ({'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name')
+
 
 
 
@@ -117,13 +134,14 @@ def test_model():
         ]))
 
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        create_graph(store, link, rep, paradigm, store_time)
+        populate(store, link, rep, paradigm, store_time)
 
-        attr, cue, result_attr = determine_query_parameters(rep)
-        result = store.query(query_time, {attr: cue})[result_attr]
+        terms, result_attr = determine_query_parameters(rep)
+        result = store.query(query_time, terms)[result_attr]
         print('query first returns: ' + result)
 
         fok_function = determine_fok_function(fok_method)
+        # what does cue mean in a jeopardy scenario?
         fok = fok_function(store, cue, result, query_time)
         print('fok = ' + str(fok))
 
