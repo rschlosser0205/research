@@ -73,7 +73,7 @@ def set_up_ab(store, backlinks, representation, paradigm, store_time):
 def create_knowledge_list(task, rep, paradigm):
     knowledge_list = []
     if task == 'AB-':
-        for i in range(0, 2, 2):
+        for i in range(0, 4, 2):
             # determine attributes
             if rep == 'direct':
                 attributes = [('goes_to_' + paradigm[i+1].lower(), paradigm[i+1])]
@@ -85,10 +85,21 @@ def create_knowledge_list(task, rep, paradigm):
             elif rep == 'types':
                 attributes = [('first', paradigm[i]), ('second', paradigm[i+1]), ('type', 'pairs')]
                 knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
-    return knowledge_list
-    # elif task == 'jeopardy':
-        # use dbpedia? or some other thing to generate background knowledge???
+    elif task == 'jeopardy_q_grid':
+        # this background knowledge is specific to the grid question
 
+        node1 = ['plan_showing_streets', [('type', 'object')]]
+        node2 = ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]]
+        node3 = ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]]
+        node4 = ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]]
+        node5 = ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]]
+        node6 = ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]]
+        node7 = ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]]
+        node8 = ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]]
+        node9 = ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]]
+        knowledge_list.append([node1, node2, node3, node4, node5, node6, node7, node8, node9])
+
+    return knowledge_list
 
 
 
@@ -103,7 +114,7 @@ def populate(store, link, store_time, task, rep, paradigm):
             attributes[attr] = val
         store.store(store_time, link, mem_id, **attributes)
         store_time+=1
-
+    return store_time
 
 
 
@@ -132,7 +143,6 @@ def test_model():
     fok_method = ['act by edges']
     paradigms = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
     store_time = 0
-    query_time = 2
     tasks = ['AB-']
 
 
@@ -161,8 +171,9 @@ def test_model():
         ]))
 
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        populate(store, link, store_time, task, rep, paradigm)
+        query_time = 1 + populate(store, link, store_time, task, rep, paradigm)
 
+        # representation here also means jeopardy question
         terms, result_attr = determine_query_parameters(rep)
         result = store.query(query_time, terms)[result_attr]
         print('query first returns: ' + result)
