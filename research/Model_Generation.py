@@ -4,8 +4,17 @@ from research.rl_memory import ActivationClass, NetworkXKB
 
 
 
-
-
+jeopardy_grid_list = [
+            ['plan_showing_streets', [('type', 'object')]],
+            ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]],
+            ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]],
+            ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]],
+            ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]],
+            ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]],
+            ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]],
+            ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
+            ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
+        ]
 
 
 
@@ -25,27 +34,45 @@ def determine_fok_function(method):
     elif method == 'act by edges':
         return act_by_edges_fok
 
+# terms is {attribute : node}, like {first : A}
+def cue_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += store.get_activation(cue, (query_time - 0.0001))
+    return fok
 
-def cue_fok(store, cue, target, query_time):
-    return store.get_activation(cue, (query_time - 0.0001))
+def target_fok(store, terms, result, query_time):
+    return store.get_activation(result, (query_time - 0.0001))
 
-def target_fok(store, cue, target, query_time):
-    return store.get_activation(target, (query_time - 0.0001))
+def cue_and_target_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += store.get_activation(cue, (query_time - 0.0001))
+    return fok + store.get_activation(result, (query_time - 0.0001))
 
-def cue_and_target_fok(store, cue, target, query_time):
-    return 0.5*(store.get_activation(target, (query_time - 0.0001)) + store.get_activation(cue, (query_time - 0.0001)))
+def incoming_edges_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += len(store.graph.in_edges(cue))
+    return fok
 
-def incoming_edges_fok(store, cue, target, query_time):
-    return len(store.graph.in_edges(cue))
+def outgoing_edges_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += len(store.graph.out_edges(cue))
+    return fok
 
-def outgoing_edges_fok(store, cue, target, query_time):
-    return len(store.graph.out_edges(cue))
+def total_edges_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
+    return fok
 
-def total_edges_fok(store, cue, target, query_time):
-    return len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
-
-def act_by_edges_fok(store, cue, target, query_time):
-    return (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))) * store.get_activation(cue, (query_time - 0.0001))
+def act_by_edges_fok(store, terms, result, query_time):
+    fok = 0
+    for cue in terms.values():
+        fok += (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))) * store.get_activation(cue, (query_time - 0.0001))
+    return fok
 
 # this function is specific to the AB- Task
 def create_edge(store, time, backlinks, representation, src, dst):
@@ -60,13 +87,6 @@ def create_edge(store, time, backlinks, representation, src, dst):
         store.store(time, backlinks, src + dst, first=src, second=dst, type='pairs')
 
 
-
-
-# this function is specific to the AB- task
-def set_up_ab(store, backlinks, representation, paradigm, store_time):
-    # paradigm is either 'ABAB', 'ABAD', 'ABCB', 'ABCD'
-    create_edge(store, store_time, backlinks, representation, 'A', 'B')
-    create_edge(store, store_time+1, backlinks, representation, paradigm[2], paradigm[3])
 
 
 # should take the task, the different paradigms/questions, and the representation
@@ -87,17 +107,7 @@ def create_knowledge_list(task, rep, paradigm):
                 knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
     elif task == 'jeopardy_q_grid':
         # this background knowledge is specific to the grid question
-        knowledge_list = [
-            ['plan_showing_streets', [('type', 'object')]],
-            ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]],
-            ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]],
-            ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]],
-            ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]],
-            ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]],
-            ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]],
-            ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
-            ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
-        ]
+        knowledge_list = jeopardy_grid_list
 
     return knowledge_list
 
@@ -180,8 +190,8 @@ def test_model():
 
         fok_function = determine_fok_function(fok_method)
         # what does cue mean in a jeopardy scenario? -- use both/all
-        #fok = fok_function(store, cue, result, query_time)
-        #print('fok = ' + str(fok))
+        fok = fok_function(store, terms, result, query_time)
+        print('fok = ' + str(fok))
 
 
 
