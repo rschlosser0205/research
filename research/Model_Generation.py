@@ -87,17 +87,17 @@ def create_knowledge_list(task, rep, paradigm):
                 knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
     elif task == 'jeopardy_q_grid':
         # this background knowledge is specific to the grid question
-
-        node1 = ['plan_showing_streets', [('type', 'object')]]
-        node2 = ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]]
-        node3 = ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]]
-        node4 = ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]]
-        node5 = ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]]
-        node6 = ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]]
-        node7 = ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]]
-        node8 = ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]]
-        node9 = ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]]
-        knowledge_list.append([node1, node2, node3, node4, node5, node6, node7, node8, node9])
+        knowledge_list = [
+            ['plan_showing_streets', [('type', 'object')]],
+            ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]],
+            ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]],
+            ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]],
+            ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]],
+            ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]],
+            ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]],
+            ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
+            ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
+        ]
 
     return knowledge_list
 
@@ -179,7 +179,7 @@ def test_model():
         print('query first returns: ' + result)
 
         fok_function = determine_fok_function(fok_method)
-        # what does cue mean in a jeopardy scenario?
+        # what does cue mean in a jeopardy scenario? -- use both/all
         #fok = fok_function(store, cue, result, query_time)
         #print('fok = ' + str(fok))
 
