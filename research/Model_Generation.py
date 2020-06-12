@@ -14,9 +14,29 @@ jeopardy_grid_list = [
             ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]],
             ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
             ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
-        ]
+]
+jeopardy_grid_terms = {'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name'
 
+jeopardy_marapi_list = [
+        ['indonesia', [('type', 'country'), ('capital', 'jakarta'), ('official language', 'indonesian'),
+                        ('currency', 'indonesian rupiah'), ('driving side', 'left'), ('located in', 'southeast asia'),
+                        ('made up of', 'islands'), ('ocean to the west', 'indian ocean'), ('ocean to the east', 'pacific ocean'),
+                       ('topography', 'mountains'), ('climate', 'tropical'), ('name', 'Indonesia'), ('colonized by', 'Netherlands')]],
+        ['indian ocean', [('type', 'ocean'), ('name', 'Indian Ocean')]],
+        ['pacific ocean', [('type', 'ocean'), ('contributes to formation of', 'volcanoes'), ('notable', 'largest ocean'),
+                            ('name', 'Pacific Ocean')]],
+        ['mountains', [('type', 'landform'), ('comes from', 'volcanoes'), ('name', 'Mountain')]],
+        ['volcanoes', [('type', 'leak'), ('comes from', 'tectonic plates'), ('produces', 'heat'), ('expels', 'ash'),
+                       ('full of', 'lava'), ('name', 'Volcano'), ('result in', 'mountains'), ('can be called', 'fire mountain')]],
+        ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash')]]
 
+]
+jeopardy_marapi_terms = {'synonym': 'fire mountain', 'famous example': 'marapi'}
+
+jeopardy_oval_office_list = [
+    [...],
+]
+jeopardy_oval_office_terms = {}
 
 
 def determine_fok_function(method):
@@ -138,7 +158,7 @@ def determine_query_parameters(question):
     elif question == 'types':
         return {'first': 'A'}, 'second'
     elif question == 'jeopardy_q_grid':
-        return {'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name'
+        return jeopardy_grid_terms
 
 
 
