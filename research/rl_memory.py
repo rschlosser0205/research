@@ -280,7 +280,7 @@ class KnowledgeStore:
         """Remove all knowledge from the KB."""
         raise NotImplementedError()
 
-    def store(self, time_stamp, mem_id=None, **kwargs):
+    def store(self, act_on, time_stamp=None, mem_id=None, **kwargs):
         """Add knowledge to the KB.
 
         Arguments:
@@ -468,7 +468,7 @@ class NetworkXKB(KnowledgeStore):
         # print(total_act)
         return total_act
 
-    def store(self, time_stamp, backlinks, mem_id=None,  **kwargs): # noqa: D102
+    def store(self, time_stamp, backlinks, act_on, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
             mem_id = uuid()
         if mem_id not in self.graph: # create node and attributes if needed
@@ -490,9 +490,14 @@ class NetworkXKB(KnowledgeStore):
             if backlinks:
                 self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
             # FIXED what does inverted_index mean (a technique for speeding up search)
+            # if value in self.graph:
+            #     if attribute == self.graph.out_edges(mem_id, data=True)['attribute']:
+            #         self.activation_fn(self.graph, mem_id, time_stamp)
+            #         return True
             self.inverted_index[attribute].add(mem_id)
         # activate node, spread
-        self.activation_fn(self.graph, mem_id, time_stamp)
+        if act_on:
+            self.activation_fn(self.graph, mem_id, time_stamp)
         return True
 
     def _activate_and_return(self, time_stamp, mem_id):

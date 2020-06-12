@@ -2,7 +2,7 @@ from itertools import product
 
 from research.rl_memory import ActivationClass, NetworkXKB
 
-
+act_on = False
 
 jeopardy_grid_list = [
             ['plan_showing_streets', [('type', 'object')]],
@@ -15,6 +15,7 @@ jeopardy_grid_list = [
             ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
             ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
         ]
+
 
 
 
@@ -78,13 +79,13 @@ def act_by_edges_fok(store, terms, result, query_time):
 def create_edge(store, time, backlinks, representation, src, dst):
     # src and dst would be either 'A', 'B', 'C', 'D'
     if representation == 'direct':
-        store.store(time, backlinks, src, **{'goes_to_' + dst.lower(): dst, })
+        store.store(time, backlinks, True, src, **{'goes_to_' + dst.lower(): dst, })
     elif representation == 'pairs':
         # two-level representation
-        store.store(time, backlinks, src + dst, first=src, second=dst)
+        store.store(time, backlinks, True, src + dst, first=src, second=dst)
     elif representation == 'types':
         # three levels (type=pairs is a shared child of AB and CD)
-        store.store(time, backlinks, src + dst, first=src, second=dst, type='pairs')
+        store.store(time, backlinks, True, src + dst, first=src, second=dst, type='pairs')
 
 
 
@@ -115,14 +116,14 @@ def create_knowledge_list(task, rep=None, paradigm=None):
 
 
 
-def populate(store, link, store_time, task, rep=None, paradigm=None):
+def populate(store, link, store_time, act_on, task, rep=None, paradigm=None):
     knowledge_list = create_knowledge_list(task, rep, paradigm)
     for node in knowledge_list:
         mem_id = node[0]
         attributes = {}
         for (attr, val) in node[1]:
             attributes[attr] = val
-        store.store(store_time, link, mem_id, **attributes)
+        store.store(store_time, link, act_on, mem_id, **attributes)
         store_time+=1
     return store_time
 
@@ -152,7 +153,7 @@ def test_model():
     fok_method = ['act by edges']
     store_time = 0
     tasks = ['AB-', 'jeopardy_q_grid']
-    representation = ['pairs', 'types']
+    representation = ['direct', 'pairs', 'types']
     paradigm = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
 
     generator = product(
@@ -170,7 +171,7 @@ def test_model():
     for rate, scale, step, cap, link, fok_method, task in generator:
         print(', '.join([
             # 'decay rate = ' + str(rate),
-            # 'scale factor = ' + str(scale),
+            'scale factor = ' + str(scale),
             # 'max steps = ' + str(step),
             # 'capped = ' + str(cap),
             'backlinks = ' + str(link),
@@ -181,7 +182,7 @@ def test_model():
         if task == 'AB-':
             for rep, para in ab_combos:
                 store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-                query_time = 1 + populate(store, link, store_time, task, rep, para)
+                query_time = 1 + populate(store, link, store_time, act_on, task, rep, para)
 
                 terms, result_attr = determine_query_parameters(rep)
                 result = store.query(query_time, terms)[result_attr]
@@ -194,7 +195,7 @@ def test_model():
 
         else:
             store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-            query_time = 1 + populate(store, link, store_time, task)
+            query_time = 1 + populate(store, link, store_time, act_on, task)
 
             # use task bc jeopardy question
             terms, result_attr = determine_query_parameters(task)
