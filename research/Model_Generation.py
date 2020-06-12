@@ -89,8 +89,8 @@ def create_edge(store, time, backlinks, representation, src, dst):
 
 
 
-# should take the task, the different paradigms/questions, and the representation
-def create_knowledge_list(task, rep, paradigm):
+# should take the task, the different paradigms, and the representation
+def create_knowledge_list(task, rep=None, paradigm=None):
     knowledge_list = []
     if task == 'AB-':
         for i in range(0, 4, 2):
@@ -115,7 +115,7 @@ def create_knowledge_list(task, rep, paradigm):
 
 
 
-def populate(store, link, store_time, task, rep, paradigm):
+def populate(store, link, store_time, task, rep=None, paradigm=None):
     knowledge_list = create_knowledge_list(task, rep, paradigm)
     for node in knowledge_list:
         mem_id = node[0]
@@ -142,19 +142,18 @@ def determine_query_parameters(question):
 
 
 
-
+# I'm sorry. I'm so so sorry
 def test_model():
     act_decay_rate = [-0.42, -0.41]
     act_scale_factor = [0.5]
     act_max_steps = [2]
     act_capped = [False, True]
     backlinks = [True, False]
-    representation = ['pairs', 'types']
     fok_method = ['act by edges']
-    paradigms = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
     store_time = 0
-    tasks = ['AB-']
-
+    tasks = ['AB-', 'jeopardy_q_grid']
+    representation = ['pairs', 'types']
+    paradigm = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
 
     generator = product(
         act_decay_rate,
@@ -162,36 +161,49 @@ def test_model():
         act_max_steps,
         act_capped,
         backlinks,
-        representation,
         fok_method,
-        paradigms,
         tasks
     )
-    for rate, scale, step, cap, link, rep, fok_method, paradigm, task in generator:
+
+    ab_combos = product(representation, paradigm)
+
+    for rate, scale, step, cap, link, fok_method, task in generator:
         print(', '.join([
             # 'decay rate = ' + str(rate),
             # 'scale factor = ' + str(scale),
             # 'max steps = ' + str(step),
             # 'capped = ' + str(cap),
             'backlinks = ' + str(link),
-            'representation = ' + rep,
-            'paradigm = ' + paradigm,
             'fok_method = ' + fok_method,
             'task = ' + task
         ]))
-
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        query_time = 1 + populate(store, link, store_time, task, rep, paradigm)
+        if task == 'AB-':
+            for rep, para in ab_combos:
+                store = NetworkXKB(ActivationClass(rate, scale, step, cap))
+                query_time = 1 + populate(store, link, store_time, task, rep, para)
 
-        # representation here also means jeopardy question
-        terms, result_attr = determine_query_parameters(rep)
-        result = store.query(query_time, terms)[result_attr]
-        print('query first returns: ' + result)
+                terms, result_attr = determine_query_parameters(rep)
+                result = store.query(query_time, terms)[result_attr]
+                print('query first returns: ' + result)
 
-        fok_function = determine_fok_function(fok_method)
-        # what does cue mean in a jeopardy scenario? -- use both/all
-        fok = fok_function(store, terms, result, query_time)
-        print('fok = ' + str(fok))
+                fok_function = determine_fok_function(fok_method)
+                # what does cue mean in a jeopardy scenario? -- use both/all
+                fok = fok_function(store, terms, result, query_time)
+                print('fok = ' + str(fok))
+
+        else:
+            store = NetworkXKB(ActivationClass(rate, scale, step, cap))
+            query_time = 1 + populate(store, link, store_time, task)
+
+            # use task bc jeopardy question
+            terms, result_attr = determine_query_parameters(task)
+            result = store.query(query_time, terms)[result_attr]
+            print('query first returns: ' + result)
+
+            fok_function = determine_fok_function(fok_method)
+            fok = fok_function(store, terms, result, query_time)
+            print('fok = ' + str(fok))
 
 
 
