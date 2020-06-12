@@ -34,9 +34,18 @@ jeopardy_marapi_list = [
 jeopardy_marapi_terms = {'synonym': 'fire mountain', 'famous example': 'marapi'}
 
 jeopardy_oval_office_list = [
-    [...],
+            ['oval_office', [('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
+             ('second_word', 'office'), ('designed_by', 'nathan_c_wyeth')]],
+            ['white_house', [('is_a', 'building'), ('houses', 'president'), ('has', 'room'), ('famous_room', 'oval_office')]],
+            ['oval', [('is_a', 'shape'), ('num_sides', '0')]],
+            ['square', [('is_a', 'shape'), ('num_sides', '4')]],
+            ['circle', [('is_a', 'shape'), ('num_sides', '0')]],
+            ['nathan_c_wyeth', [('is_a', 'architect'), ('worked_on', 'the_white_house'), ('born_in', 'illinois')]],
+            ['william_taft', [('is_a', 'president'), ('president_number', '27'), ('assumed_office_in', '1909'), ('odered_construction_of', 'oval_office')]],
+            ['1909', [('marks_opening_of', 'manhattan_bridge')]],
 ]
-jeopardy_oval_office_terms = {}
+
+jeopardy_oval_office_terms = {'is_a': 'room', 'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}
 
 
 def determine_fok_function(method):
@@ -159,6 +168,7 @@ def determine_query_parameters(question):
         return {'first': 'A'}, 'second'
     elif question == 'jeopardy_q_grid':
         return jeopardy_grid_terms
+
 
 
 
