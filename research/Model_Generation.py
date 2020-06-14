@@ -2,7 +2,7 @@ from itertools import product
 
 from research.rl_memory import ActivationClass, NetworkXKB
 
-act_on = False
+act_on = True
 
 jeopardy_grid_list = [
             ['plan_showing_streets', [('type', 'object')]],
@@ -31,10 +31,10 @@ jeopardy_marapi_list = [
         ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash')]]
 
 ]
-jeopardy_marapi_terms = {'synonym': 'fire mountain', 'famous example': 'marapi'}
+jeopardy_marapi_terms = {'synonym': 'fire mountain', 'famous example': 'marapi'}, 'name'
 
 jeopardy_oval_office_list = [
-            ['oval_office', [('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
+            ['oval_office', [('name', 'Oval_Office'), ('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
              ('second_word', 'office'), ('designed_by', 'nathan_c_wyeth')]],
             ['white_house', [('is_a', 'building'), ('houses', 'president'), ('has', 'room'), ('famous_room', 'oval_office')]],
             ['oval', [('is_a', 'shape'), ('num_sides', '0')]],
@@ -45,7 +45,7 @@ jeopardy_oval_office_list = [
             ['1909', [('marks_opening_of', 'manhattan_bridge')]],
 ]
 
-jeopardy_oval_office_terms = {'is_a': 'room', 'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}
+jeopardy_oval_office_terms = {'is_a': 'room', 'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'
 
 
 def determine_fok_function(method):
@@ -138,6 +138,12 @@ def create_knowledge_list(task, rep=None, paradigm=None):
     elif task == 'jeopardy_q_grid':
         # this background knowledge is specific to the grid question
         knowledge_list = jeopardy_grid_list
+    elif task == 'jeopardy_q_marapi':
+        # this background knowledge is specific to the grid question
+        knowledge_list = jeopardy_marapi_list
+    elif task == 'jeopardy_q_oval_office':
+        # this background knowledge is specific to the grid question
+        knowledge_list = jeopardy_oval_office_list
 
     return knowledge_list
 
@@ -168,6 +174,10 @@ def determine_query_parameters(question):
         return {'first': 'A'}, 'second'
     elif question == 'jeopardy_q_grid':
         return jeopardy_grid_terms
+    elif question == 'jeopardy_q_marapi':
+        return jeopardy_marapi_terms
+    elif question == 'jeopardy_q_oval_office':
+        return jeopardy_oval_office_terms
 
 
 
@@ -176,13 +186,15 @@ def determine_query_parameters(question):
 # I'm sorry. I'm so so sorry
 def test_model():
     act_decay_rate = [-0.42, -0.41]
-    act_scale_factor = [0.5]
-    act_max_steps = [2]
+    act_scale_factor = [0.5, 0.6]
+    act_max_steps = [1, 2, 3]
     act_capped = [False, True]
-    backlinks = [True, False]
-    fok_method = ['act by edges']
+    backlinks = [False]
+    fok_method = ['incoming edges']
+    #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges'
     store_time = 0
-    tasks = ['AB-', 'jeopardy_q_grid']
+    tasks = ['jeopardy_q_oval_office']
+    #'jeopardy_q_grid', 'jeopardy_q_marapi',
     representation = ['direct', 'pairs', 'types']
     paradigm = ['ABAB', 'ABAD', 'ABCB', 'ABCD']
 
@@ -202,8 +214,8 @@ def test_model():
         print(', '.join([
             # 'decay rate = ' + str(rate),
             'scale factor = ' + str(scale),
-            # 'max steps = ' + str(step),
-            # 'capped = ' + str(cap),
+            'max steps = ' + str(step),
+            'capped = ' + str(cap),
             'backlinks = ' + str(link),
             'fok_method = ' + fok_method,
             'task = ' + task
@@ -229,12 +241,18 @@ def test_model():
 
             # use task bc jeopardy question
             terms, result_attr = determine_query_parameters(task)
-            result = store.query(query_time, terms)[result_attr]
-            print('query first returns: ' + result)
+            result = store.query(query_time, terms)
+            if result is not None:
+                result = result[result_attr]
+                print('query first returns: ' + result)
 
             fok_function = determine_fok_function(fok_method)
-            fok = fok_function(store, terms, result, query_time)
-            print('fok = ' + str(fok))
+
+
+            for (attr, cue) in terms.items():
+                mini_terms = {attr: cue}
+                fok = fok_function(store, mini_terms, result, query_time)
+                print('fok = ' + str(fok) + ' cue = ' + str(cue))
 
 
 
