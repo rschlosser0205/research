@@ -27,21 +27,24 @@ jeopardy_marapi_list = [
                             ('name', 'Pacific Ocean')]],
         ['mountains', [('type', 'landform'), ('comes from', 'volcanoes'), ('name', 'Mountain')]],
         ['volcanoes', [('type', 'leak'), ('comes from', 'tectonic plates'), ('produces', 'heat'), ('expels', 'ash'),
-                       ('full of', 'lava'), ('name', 'Volcano'), ('result in', 'mountains'), ('can be called', 'fire mountain')]],
+                       ('full of', 'lava'), ('name', 'Volcano'), ('result in', 'mountains'),
+                       ('can be called', 'fire mountain'), ('famous example from antiquity', 'mt vesuvius'),
+                       ('famous example from modernity', 'krakatoa')]],
+        ['krakatoa', [('type', 'volcano'), ('located in', 'indonesia'), ('last eruption', '2020'), ('name', 'Krakatoa')]],
         ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash')]]
 
 ]
-jeopardy_marapi_terms = {'synonym': 'fire mountain', 'famous example': 'marapi'}, 'name'
+jeopardy_marapi_terms = {'can be called': 'fire mountain', 'famous example': 'marapi'}, 'name'
 
 jeopardy_oval_office_list = [
-            ['oval_office', [('name', 'Oval_Office'), ('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
-             ('second_word', 'office'), ('designed_by', 'nathan_c_wyeth')]],
+            ['oval_office', [('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
+             ('second_word', 'office'), ('designed_by', 'nathan_c_wyeth'), ('name', 'Oval Office')]],
             ['white_house', [('is_a', 'building'), ('houses', 'president'), ('has', 'room'), ('famous_room', 'oval_office')]],
             ['oval', [('is_a', 'shape'), ('num_sides', '0')]],
             ['square', [('is_a', 'shape'), ('num_sides', '4')]],
             ['circle', [('is_a', 'shape'), ('num_sides', '0')]],
             ['nathan_c_wyeth', [('is_a', 'architect'), ('worked_on', 'the_white_house'), ('born_in', 'illinois')]],
-            ['william_taft', [('is_a', 'president'), ('president_number', '27'), ('assumed_office_in', '1909'), ('odered_construction_of', 'oval_office')]],
+            ['william_taft', [('is_a', 'president'), ('president_number', '27'), ('assumed_office_in', '1909'), ('ordered_construction_of', 'oval_office')]],
             ['1909', [('marks_opening_of', 'manhattan_bridge')]],
 ]
 
@@ -139,10 +142,8 @@ def create_knowledge_list(task, rep=None, paradigm=None):
         # this background knowledge is specific to the grid question
         knowledge_list = jeopardy_grid_list
     elif task == 'jeopardy_q_marapi':
-        # this background knowledge is specific to the grid question
         knowledge_list = jeopardy_marapi_list
     elif task == 'jeopardy_q_oval_office':
-        # this background knowledge is specific to the grid question
         knowledge_list = jeopardy_oval_office_list
 
     return knowledge_list
