@@ -2,10 +2,7 @@ from itertools import product
 from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 
-act_on = True
-
-Task = namedtuple('Task', 'knowledge_list, retrieval_steps')
-
+Task = namedtuple('Task', 'knowledge_list, retrieval_steps, act_on')
 
 TASKS = {
     'jeopardy_grid': Task(
@@ -23,6 +20,7 @@ TASKS = {
         retrieval_steps=[
             [{'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name'],
         ],
+        act_on=False
     ),
     'jeopardy_marapi': Task(
         knowledge_list=[
@@ -50,6 +48,7 @@ TASKS = {
         retrieval_steps=[
             [{'can be called': 'fire mountain', 'famous example': 'marapi'}, 'name'],
         ],
+        act_on=False
     ),
     'jeopardy_oval_office': Task(
         knowledge_list=[
@@ -66,6 +65,7 @@ TASKS = {
         retrieval_steps=[
             [{'is_a': 'room', 'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'],
         ],
+        act_on=False
     ),
 }
 
@@ -108,6 +108,7 @@ def create_paired_recall_tasks():
         globals()['TASKS'][variable_name] = Task(
             knowledge_list=knowledge_list,
             retrieval_steps=retrieval_steps,
+            act_on=True
         )
 
 
@@ -143,20 +144,19 @@ def cue_fok(store, terms, result, query_time):
 
 
 def target_fok(store, terms, result, query_time):
-    if result is not None:
-        return store.get_activation(result, (query_time - 0.0001))
-    else:
+    if result is None:
         return 0
+    return store.get_activation(result, (query_time - 0.0001))
+
 
 def cue_and_target_fok(store, terms, result, query_time):
+    if result is None:
+        return 0
     total = sum(
         store.get_activation(cue, (query_time - 0.0001))
-        for cue in terms.values() if store.graph.has_node(cue)
+        for cue in terms.values()
     )
-    if result is not None:
-        return total + store.get_activation(result, (query_time - 0.0001))
-    else:
-        return 0
+    return total + store.get_activation(result, (query_time - 0.0001))
 
 
 def incoming_edges_fok(store, terms, result, query_time):
@@ -178,6 +178,7 @@ def total_edges_fok(store, terms, result, query_time):
         len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
         for cue in terms.values()
     )
+
 
 def act_by_edges_fok(store, terms, result, query_time):
     return sum(
@@ -238,7 +239,7 @@ def test_model():
             'task = ' + str(task)
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        query_time = 1 + populate(store, link, store_time, act_on, task.knowledge_list)
+        query_time = 1 + populate(store, link, store_time, task.act_on, task.knowledge_list)
 
         for terms, result_attr in task.retrieval_steps:
             result = store.query(query_time, terms)
