@@ -35,18 +35,37 @@ TASKS = {
                 ('type', 'ocean'), ('contributes to formation of', 'volcanoes'), ('notable', 'largest ocean'),
                 ('name', 'Pacific Ocean')]
             ],
-            ['mountains', [('type', 'landform'), ('comes from', 'volcanoes'), ('name', 'Mountain')]],
-            ['volcanoes', [
+            ['mountain', [('type', 'landform'), ('comes from', 'volcano'), ('name', 'Mountain')]],
+            ['volcano', [
                 ('type', 'leak'), ('comes from', 'tectonic plates'), ('produces', 'heat'), ('expels', 'ash'),
-                ('full of', 'lava'), ('name', 'Volcano'), ('result in', 'mountains'),
+                ('full of', 'lava'), ('name', 'Volcano'), ('is a', 'mountains'),
                 ('can be called', 'fire mountain'), ('famous example from antiquity', 'mt vesuvius'),
                 ('famous example from modernity', 'krakatoa')]
             ],
-            ['krakatoa', [('type', 'volcano'), ('located in', 'indonesia'), ('last eruption', '2020'), ('name', 'Krakatoa')]],
-            ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash')]]
+            ['krakatoa', [('type', 'volcano'), ('located in', 'indonesia'), ('last eruption', '2020'), ('is a', 'mountain'), ('name', 'Krakatoa')]],
+            ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash'), ('name', 'Fire')]],
+            ['jakarta', [('type', 'city'), ('capital of', 'indonesia'), ('located in', 'indonesia'), ('population', '9.6 million'), ('name', 'Jakarta')]],
+            ['yamin', [('type', 'mountain'), ('located in', 'indonesia'), ('height', '4540 m'), ('name', 'Yamin')]],
+            ['pangrango', [('type', 'volcano'), ('located in', 'indonesia'), ('status', 'dormant'), ('name', 'Pangrango'), ('is a', 'mountain')]],
+            ['tujuh', [('type', 'volcano'), ('located in', 'indonesia'), ('is a', 'mountain'), ('name', 'Tujuh')]],
+            ['kelimutu', [('type', 'volcano'), ('located in', 'indonesia'), ('name', 'Kelimutu'), ('last eruption', '1968'), ('is a', 'mountain')]],
+            ['kapalatmada', [('type', 'mountain'), ('located in', 'indonesia'), ('name', 'Kapalatmada'), ('height', '2428m')]],
+            ['sentani', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Sentani')]],
+            ['toba', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Toba')]],
+            ['danau batur', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Danau Batur'), ('formed by', 'volcano')]],
+            ['linow', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Linow'), ('formed by', 'volcano')]],
+            ['citarum', [('type', 'river'), ('located in', 'indonesia'), ('name', 'Citarum'), ('flows to', 'java sea')]],
+            ['mahakam', [('type', 'river'), ('located in', 'indonesia'), ('name', 'Mahakam'), ('flows to', 'makassar strait')]],
+            ['java', [('type', 'island'), ('located in', 'indonesia'), ('name', 'Java')]],
+            ['sumatra', [('type', 'island'), ('located in', 'indonesia'), ('name', 'Sumatra')]],
+
+
         ],
         retrieval_steps=[
-            [{'can be called': 'fire mountain', 'famous example': 'marapi'}, 'name'],
+            [{'famous example': 'marapi'}, 'name'],
+            [{'located in': 'indonesia'}, ],
+            [{'located in': 'indonesia'}, {'is a': 'mountain'}, 'name'],
+            [{'is a': 'mountain'}, {'produces': 'heat'}, 'name'],
         ],
         act_on=False
     ),
@@ -241,6 +260,7 @@ def test_model():
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         query_time = 1 + populate(store, link, store_time, task.act_on, task.knowledge_list)
 
+        # make a loop to go through retrieval steps
         for terms, result_attr in task.retrieval_steps:
             result = store.query(query_time, terms)
             if result is not None:
