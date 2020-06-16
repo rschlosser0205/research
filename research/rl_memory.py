@@ -454,22 +454,20 @@ class NetworkXKB(KnowledgeStore):
         self.result_index = None
 
     def get_activation(self, mem_id, current_time):
-        if self.graph.has_node(mem_id):
-            # returning activation number using time stamp list ????
-            total_act = 0
-            # print(mem_id)
-            for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
-                time_since = current_time - time_stamp
-                if time_since < 0: # time travel: ignore this tuple
-                    continue
-                elif time_since == 0: # time_since approaches zero
-                    total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
-                else:
-                    total_act = total_act + scale_factor * (time_since**(self.activation_class.decay_rate))
-            # print(total_act)
-            return total_act
-        else:
-            return 0
+        # returning activation number using time stamp list ????
+        total_act = 0
+        # print(mem_id)
+        for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
+            time_since = current_time - time_stamp
+            if time_since < 0: # time travel: ignore this tuple
+                continue
+            elif time_since == 0: # time_since approaches zero
+                total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
+            else:
+                total_act = total_act + scale_factor * (time_since**(self.activation_class.decay_rate))
+        # print(total_act)
+        return total_act
+
 
     def store(self, time_stamp, backlinks, act_on, mem_id=None,  **kwargs): # noqa: D102
         if mem_id is None:
