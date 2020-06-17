@@ -38,12 +38,13 @@ TASKS = {
             ['mountain', [('type', 'landform'), ('comes from', 'volcano'), ('name', 'Mountain')]],
             ['volcano', [
                 ('type', 'leak'), ('comes from', 'tectonic plates'), ('produces', 'heat'), ('expels', 'ash'),
-                ('full of', 'lava'), ('name', 'Volcano'), ('is a', 'mountains'),
+                ('full of', 'lava'), ('name', 'Volcano'), ('is a', 'mountain'),
                 ('can be called', 'fire mountain'), ('famous example from antiquity', 'mt vesuvius'),
-                ('famous example from modernity', 'krakatoa')]
+                ('famous example from modernity', 'krakatoa'), ('related to', 'fire')]
             ],
+            ['lava', [('type', 'molten rock'), ('located in', 'volcano'), ('gives off', 'heat'), ('related to', 'fire'), ('inside', 'mountain'), ('name', 'Lava')],],
             ['krakatoa', [('type', 'volcano'), ('located in', 'indonesia'), ('last eruption', '2020'), ('is a', 'mountain'), ('name', 'Krakatoa')]],
-            ['fire', [('type', 'chemical reaction'), ('produces', 'heat'), ('results in', 'ash'), ('name', 'Fire')]],
+            ['fire', [('type', 'chemical reaction'), ('related to', 'heat'), ('results in', 'ash'), ('name', 'Fire')]],
             ['jakarta', [('type', 'city'), ('capital of', 'indonesia'), ('located in', 'indonesia'), ('population', '9.6 million'), ('name', 'Jakarta')]],
             ['yamin', [('type', 'mountain'), ('located in', 'indonesia'), ('height', '4540 m'), ('name', 'Yamin')]],
             ['pangrango', [('type', 'volcano'), ('located in', 'indonesia'), ('status', 'dormant'), ('name', 'Pangrango'), ('is a', 'mountain')]],
@@ -63,9 +64,9 @@ TASKS = {
         ],
         retrieval_steps=[
             [{'famous example': 'marapi'}, 'name'],
-            [{'located in': 'indonesia'}, ],
             [{'located in': 'indonesia'}, {'is a': 'mountain'}, 'name'],
-            [{'is a': 'mountain'}, {'produces': 'heat'}, 'name'],
+            [{'is a': 'mountain'}, {'related to': 'fire'}, 'name'],
+            [{'related to': 'fire'}, {'inside': 'mountain'}, 'located in']
         ],
         act_on=False
     ),
@@ -260,19 +261,35 @@ def test_model():
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         query_time = 1 + populate(store, link, store_time, task.act_on, task.knowledge_list)
 
-        # make a loop to go through retrieval steps
-        for terms, result_attr in task.retrieval_steps:
+        # loop through retrieval step options
+        for sequence in task.retrieval_steps:
+            # the last piece
+            result_attr = sequence[len(sequence)-1]
+            # the first piece
+            terms = sequence[0]
             result = store.query(query_time, terms)
-            if result is not None:
-                result = result[result_attr]
-                print('query returns: ' + result)
-            else:
-                print('result not found')
 
-        fok_function = determine_fok_function(fok_method)
-        # what does cue mean in a jeopardy scenario? -- use both/all
-        fok = fok_function(store, terms, result, query_time)
-        print('fok = ' + str(fok))
-
-
+            while result is not None:
+                # the middle part, secondary terms
+                for i in range(1, len(sequence)-1):
+                    # calculate fok
+                    fok_function = determine_fok_function(fok_method)
+                    fok = fok_function(store, terms, result, query_time)
+                    print('fok = ' + str(fok))
+                    # check for current attribute within the current returned result
+                    if result[str(list(sequence[i].keys())[0])] != str(list(sequence[i].values())[0]):
+                        # go to next result
+                        if store.has_next_result:
+                            result = store.next_result(query_time +1)
+                            i = 1
+                            # should restart the for loop
+                        else:
+                            print('result not found/no result')
+                            result = None
+                            break
+                    # else continue in the for loop
+                # if you've made it this far, you are Correct and may break free of while loop
+                if result is not None:
+                    print(result[result_attr])
+                break
 test_model()
