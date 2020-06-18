@@ -18,7 +18,7 @@ TASKS = {
             ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
         ],
         retrieval_steps=[
-            [{'also_called': 'plan_showing_streets', 'num_letters': '4'}, 'name'],
+            [{'also_called': 'plan_showing_streets'}, [{'num_letters': '4'}], 'name'],
         ],
         act_on=False
     ),
@@ -63,10 +63,10 @@ TASKS = {
 
         ],
         retrieval_steps=[
-            [{'famous example': 'marapi'}, 'name'],
-            [{'located in': 'indonesia'}, {'is a': 'mountain'}, 'name'],
-            [{'is a': 'mountain'}, {'related to': 'fire'}, 'name'],
-            [{'related to': 'fire'}, {'inside': 'mountain'}, 'located in']
+            [{'famous example': 'marapi'},[], 'name'],
+            [{'located in': 'indonesia'}, [{'is a': 'mountain'}], 'name'],
+            [{'is a': 'mountain'}, [{'related to': 'fire'}], 'name'], # free associate on mountain
+            [{'related to': 'fire'}, [{'inside': 'mountain'}], 'located in'] # free associate on fire
         ],
         act_on=False
     ),
@@ -83,7 +83,7 @@ TASKS = {
             ['1909', [('marks_opening_of', 'manhattan_bridge')]],
         ],
         retrieval_steps=[
-            [{'is_a': 'room', 'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'],
+            [{'is_a': 'room'}, [{'designed_by': 'nathan_c_wyeth'}, {'located_in': 'the_white_house'}], 'name'],
         ],
         act_on=False
     ),
@@ -264,32 +264,40 @@ def test_model():
         # loop through retrieval step options
         for sequence in task.retrieval_steps:
             # the last piece
-            result_attr = sequence[len(sequence)-1]
+            result_attr = sequence[2]
             # the first piece
             terms = sequence[0]
             result = store.query(query_time, terms)
+            neighbors = store.graph.out_edges(result['node_id'])
+            for (x, y) in neighbors:
+                print(x)
+                print(y)
+            print('new one')
 
-            while result is not None:
-                # the middle part, secondary terms
-                for i in range(1, len(sequence)-1):
-                    # calculate fok
-                    fok_function = determine_fok_function(fok_method)
-                    fok = fok_function(store, terms, result, query_time)
-                    print('fok = ' + str(fok))
-                    # check for current attribute within the current returned result
-                    if result[str(list(sequence[i].keys())[0])] != str(list(sequence[i].values())[0]):
-                        # go to next result
-                        if store.has_next_result:
-                            result = store.next_result(query_time +1)
-                            i = 1
-                            # should restart the for loop
-                        else:
-                            print('result not found/no result')
-                            result = None
-                            break
-                    # else continue in the for loop
-                # if you've made it this far, you are Correct and may break free of while loop
-                if result is not None:
-                    print(result[result_attr])
-                break
+            # while result is not None:
+            #     # the middle part, secondary terms
+            #     for attribute in sequence[1]:
+            #         # calculate fok
+            #         fok_function = determine_fok_function(fok_method)
+            #         fok = fok_function(store, terms, result, query_time)
+            #         print('fok = ' + str(fok))
+            #         # check for current attribute within the current returned result
+            #         if str(result[str(list(attribute.keys())[0])]) == str(list(attribute.values())[0]):
+            #             continue
+            #         else:
+            #             # go to next result
+            #             if store.has_next_result:
+            #                 result = store.next_result(query_time +1)
+            #                 # FIXME how to restart a loop????
+            #                 # should restart the for loop on ln 274 and check a new result
+            #             else:
+            #                 print('result not found/no result')
+            #                 result = None
+            #                 break
+            #         # else continue in the for loop
+            #     # if you've made it this far, you are Correct and may break free of while loop
+            #     # except that results that are not Correct keep getting to this point
+            #     if result is not None:
+            #         print(result[result_attr])
+            #         break
 test_model()
