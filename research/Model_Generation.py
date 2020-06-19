@@ -2,7 +2,7 @@ from itertools import product
 from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 
-Task = namedtuple('Task', 'knowledge_list, retrieval_steps, act_on')
+Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
 RetrievalStep = namedtuple('RetrievalStep', 'action, terms, constraints, result_attr')
 
 TASKS = {
@@ -21,7 +21,7 @@ TASKS = {
         retrieval_steps=[
             RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
         ],
-        act_on=False,
+        activate_on_store=False,
     ),
     'jeopardy_marapi': Task(
         knowledge_list=[
@@ -91,7 +91,7 @@ TASKS = {
             # free associate on fire
             RetrievalStep('query', {'related to': 'fire'}, {'inside': 'mountain'}, 'located in'),
         ],
-        act_on=False,
+        activate_on_store=False,
     ),
     'jeopardy_oval_office': Task(
         knowledge_list=[
@@ -107,7 +107,7 @@ TASKS = {
         retrieval_steps=[
             RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
         ],
-        act_on=False,
+        activate_on_store=False,
     ),
 }
 
@@ -150,7 +150,7 @@ def create_paired_recall_tasks():
         globals()['TASKS'][variable_name] = Task(
             knowledge_list=knowledge_list,
             retrieval_steps=retrieval_steps,
-            act_on=True,
+            activate_on_store=True,
         )
 
 
@@ -231,13 +231,13 @@ def avg_activation_of_everything(store, terms, result, query_time):
     ) / len(all_nodes)
 
 
-def populate(store, link, store_time, act_on, knowledge_list):
+def populate(store, link, store_time, activate_on_store, knowledge_list):
     for node in knowledge_list:
         mem_id = node[0]
         attributes = {}
         for (attr, val) in node[1]:
             attributes[attr] = val
-        store.store(store_time, link, act_on, mem_id, **attributes)
+        store.store(store_time, link, activate_on_store, mem_id, **attributes)
         store_time += 1
     return store_time
 
@@ -266,19 +266,19 @@ def test_model():
         task_names,
     )
 
-    for rate, scale, step, cap, link, fok_method, task_name in generator:
+    for rate, scale, step, cap, backlink, fok_method, task_name in generator:
         task = TASKS[task_name]
         print(', '.join([
             # 'decay rate = ' + str(rate),
             'scale factor = ' + str(scale),
             'max steps = ' + str(step),
             'capped = ' + str(cap),
-            'backlinks = ' + str(link),
+            'backlinks = ' + str(backlink),
             'fok_method = ' + fok_method,
             'task = ' + str(task)
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        query_time = 1 + populate(store, link, store_time, task.act_on, task.knowledge_list)
+        time = 1 + populate(store, backlink, store_time, task.activate_on_store, task.knowledge_list)
         fok_function = determine_fok_function(fok_method)
 
         # loop through retrieval step options
