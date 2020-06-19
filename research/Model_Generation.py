@@ -3,6 +3,7 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, act_on')
+RetrievalStep = namedtuple('RetrievalStep', 'action, terms, constraints, result_attr')
 
 TASKS = {
     'jeopardy_grid': Task(
@@ -18,7 +19,7 @@ TASKS = {
             ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
         ],
         retrieval_steps=[
-            [{'also_called': 'plan_showing_streets'}, [{'num_letters': '4'}], 'name'],
+            RetrievalStep('query', {'also_called': 'plan_showing_streets'}, [{'num_letters': '4'}], 'name'),
         ],
         act_on=False
     ),
@@ -63,10 +64,10 @@ TASKS = {
 
         ],
         retrieval_steps=[
-            [{'famous example': 'marapi'},[], 'name'],
-            [{'located in': 'indonesia'}, [{'is a': 'mountain'}], 'name'],
-            [{'is a': 'mountain'}, [{'related to': 'fire'}], 'name'], # free associate on mountain
-            [{'related to': 'fire'}, [{'inside': 'mountain'}], 'located in'] # free associate on fire
+            RetrievalStep('query', {'famous example': 'marapi'},[], 'name'),
+            RetrievalStep('query', {'located in': 'indonesia'}, [{'is a': 'mountain'}], 'name'),
+            RetrievalStep('query', {'is a': 'mountain'}, [{'related to': 'fire'}], 'name'), # free associate on mountain
+            RetrievalStep('query', {'related to': 'fire'}, [{'inside': 'mountain'}], 'located in'), # free associate on fire
         ],
         act_on=False
     ),
@@ -83,7 +84,7 @@ TASKS = {
             ['1909', [('marks_opening_of', 'manhattan_bridge')]],
         ],
         retrieval_steps=[
-            [{'is_a': 'room'}, [{'designed_by': 'nathan_c_wyeth'}, {'located_in': 'the_white_house'}], 'name'],
+            RetrievalStep('query', {'is_a': 'room'}, [{'designed_by': 'nathan_c_wyeth'}, {'located_in': 'the_white_house'}], 'name'),
         ],
         act_on=False
     ),
@@ -114,15 +115,15 @@ def create_paired_recall_tasks():
 
         if representation == 'direct':
             retrieval_steps = [
-                [{'goes_to_b': 'B'}, 'node_id'],
+                RetrievalStep('query', {'goes_to_b': 'B'}, [], 'node_id'),
             ]
         elif representation == 'pairs':
             retrieval_steps = [
-                [{'first': 'A'}, 'second'],
+                RetrievalStep('query', {'first': 'A'}, [], 'second'),
             ]
         elif representation == 'types':
             retrieval_steps = [
-                [{'first': 'A'}, 'second'],
+                RetrievalStep('query', {'first': 'A'}, [], 'second'),
             ]
 
         globals()['TASKS'][variable_name] = Task(
