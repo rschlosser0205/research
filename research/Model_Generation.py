@@ -283,44 +283,23 @@ def test_model():
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         query_time = 1 + populate(store, link, store_time, task.act_on, task.knowledge_list)
+        fok_function = determine_fok_function(fok_method)
 
         # loop through retrieval step options
-        for sequence in task.retrieval_steps:
-            # the last piece
-            result_attr = sequence[2]
-            # the first piece
-            terms = sequence[0]
-            result = store.query(query_time, terms)
-            neighbors = store.graph.out_edges(result['node_id'])
-            for (x, y) in neighbors:
-                print(x)
-                print(y)
-            print('new one')
+        for step in task.retrieval_steps:
+            result = store.query(query_time, step.query)
 
-            # while result is not None:
-            #     # the middle part, secondary terms
-            #     for attribute in sequence[1]:
-            #         # calculate fok
-            #         fok_function = determine_fok_function(fok_method)
-            #         fok = fok_function(store, terms, result, query_time)
-            #         print('fok = ' + str(fok))
-            #         # check for current attribute within the current returned result
-            #         if str(result[str(list(attribute.keys())[0])]) == str(list(attribute.values())[0]):
-            #             continue
-            #         else:
-            #             # go to next result
-            #             if store.has_next_result:
-            #                 result = store.next_result(query_time +1)
-            #                 # FIXME how to restart a loop????
-            #                 # should restart the for loop on ln 274 and check a new result
-            #             else:
-            #                 print('result not found/no result')
-            #                 result = None
-            #                 break
-            #         # else continue in the for loop
-            #     # if you've made it this far, you are Correct and may break free of while loop
-            #     # except that results that are not Correct keep getting to this point
-            #     if result is not None:
-            #         print(result[result_attr])
-            #         break
+            while result is not None:
+                # calculate fok
+                fok = fok_function(store, terms, result, query_time)
+                print('fok = ' + str(fok))
+                # if the result doesn't fit the constraints, move on
+                if not all(result[attr] == val for attr, val in step.constraints.items()):
+                    result = store.next_result()
+                    continue
+                if result is not None:
+                    print(result[step.result_attr])
+                    break
+
+
 test_model()
