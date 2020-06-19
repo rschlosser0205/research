@@ -5,7 +5,6 @@ from research.rl_memory import ActivationClass, NetworkXKB
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, act_on')
 RetrievalStep = namedtuple('RetrievalStep', 'action, terms, constraints, result_attr')
 
-
 TASKS = {
     'jeopardy_grid': Task(
         knowledge_list=[
@@ -151,7 +150,7 @@ def create_paired_recall_tasks():
         globals()['TASKS'][variable_name] = Task(
             knowledge_list=knowledge_list,
             retrieval_steps=retrieval_steps,
-            act_on=True
+            act_on=True,
         )
 
 
@@ -181,9 +180,9 @@ def determine_fok_function(method):
 def cue_fok(store, terms, result, query_time):
     # if the cue node is in the graph, proceed. (for the marapi cue this returns 0)
     return sum(
-            store.get_activation(cue, (query_time - 0.0001))
-            for cue in terms.values() if store.graph.has_node(cue)
-        )
+        store.get_activation(cue, (query_time - 0.0001))
+        for cue in terms.values() if store.graph.has_node(cue)
+    )
 
 
 def target_fok(store, terms, result, query_time):
@@ -195,25 +194,16 @@ def target_fok(store, terms, result, query_time):
 def cue_and_target_fok(store, terms, result, query_time):
     if result is None:
         return 0
-    total = sum(
-        store.get_activation(cue, (query_time - 0.0001))
-        for cue in terms.values()
-    )
+    total = sum(store.get_activation(cue, (query_time - 0.0001)) for cue in terms.values())
     return total + store.get_activation(result, (query_time - 0.0001))
 
 
 def incoming_edges_fok(store, terms, result, query_time):
-    return sum(
-        len(store.graph.in_edges(cue))
-        for cue in terms.values()
-    )
+    return sum(len(store.graph.in_edges(cue)) for cue in terms.values())
 
 
 def outgoing_edges_fok(store, terms, result, query_time):
-    return sum(
-        len(store.graph.out_edges(cue))
-        for cue in terms.values()
-    )
+    return sum(len(store.graph.out_edges(cue)) for cue in terms.values())
 
 
 def total_edges_fok(store, terms, result, query_time):
@@ -225,16 +215,20 @@ def total_edges_fok(store, terms, result, query_time):
 
 def act_by_edges_fok(store, terms, result, query_time):
     return sum(
-        (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))) * store.get_activation(cue, (query_time - 0.0001))
+        (
+            (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue)))
+            * store.get_activation(cue, (query_time - 0.0001))
+        )
         for cue in terms.values() if store.graph.has_node(cue)
     )
+
 
 def avg_activation_of_everything(store, terms, result, query_time):
     all_nodes = list(store.graph.nodes)
     return sum(
         store.get_activation(node, (query_time - 0.0001))
         for node in all_nodes
-    )/len(all_nodes)
+    ) / len(all_nodes)
 
 
 def populate(store, link, store_time, act_on, knowledge_list):
@@ -244,9 +238,8 @@ def populate(store, link, store_time, act_on, knowledge_list):
         for (attr, val) in node[1]:
             attributes[attr] = val
         store.store(store_time, link, act_on, mem_id, **attributes)
-        store_time+=1
+        store_time += 1
     return store_time
-
 
 
 def test_model():
@@ -255,7 +248,10 @@ def test_model():
     act_max_steps = [1, 2, 3]
     act_capped = [False, True]
     backlinks = [False, True]
-    fok_method = ['incoming edges', 'act by edges', 'total edges', 'cue and target', 'cue', 'target', 'outgoing edges', 'avg_activation_of_everything']
+    fok_method = [
+        'incoming edges', 'act by edges', 'total edges', 'cue and target', 'cue', 'target',
+        'outgoing edges', 'avg_activation_of_everything'
+    ]
     #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything
     store_time = 0
     task_names = list(TASKS.keys())

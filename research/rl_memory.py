@@ -457,7 +457,7 @@ class NetworkXKB(KnowledgeStore):
         # returning activation number using time stamp list ????
         total_act = 0
         # print(mem_id)
-        for (time_stamp, scale_factor) in self.graph.nodes[mem_id]['activation']:
+        for time_stamp, scale_factor in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
             if time_since < 0: # time travel: ignore this tuple
                 continue
@@ -702,6 +702,7 @@ class SparqlKB(KnowledgeStore):
     @staticmethod
     def retrievable(mem_id): # noqa: D102
         return isinstance(mem_id, str) and mem_id.startswith('<http')
+
 
 class ActivationClass:
     def __init__(self, decay_rate, scale_factor, max_steps, capped):
