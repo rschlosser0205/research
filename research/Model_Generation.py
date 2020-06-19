@@ -3,7 +3,7 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
-RetrievalStep = namedtuple('RetrievalStep', 'action, terms, constraints, result_attr')
+RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
 
 TASKS = {
     'jeopardy_grid': Task(
@@ -283,11 +283,11 @@ def test_model():
 
         # loop through retrieval step options
         for step in task.retrieval_steps:
-            result = store.query(query_time, step.query)
+            result = store.query(query_time, step.query_terms)
 
             while result is not None:
                 # calculate fok
-                fok = fok_function(store, terms, result, query_time)
+                fok = fok_function(store, step.query_terms, result, query_time)
                 print('fok = ' + str(fok))
                 # if the result doesn't fit the constraints, move on
                 if not all(result[attr] == val for attr, val in step.constraints.items()):
