@@ -278,21 +278,40 @@ def test_model():
         time = 1 + populate(store, backlink, store_time, task.activate_on_store, task.knowledge_list)
         fok_function = determine_fok_function(fok_method)
 
-        # loop through retrieval step options
-        for step in task.retrieval_steps:
-            result = store.query(query_time, step.query_terms)
+        prev_result = None
 
-            while result is not None:
+        # loop through the retrieval steps
+        for step_num, step in enumerate(task.retrieval_steps, start=1):
+
+            # take the retrieval step
+            if step.action == 'query':
+                result = store.query(time, step.query_terms)
+            elif step.action == 'retrieve':
+                result = store.retrieve(time, prev_result)
+            else:
+                print('invalid action: ' + step.action)
+                return
+
+            failed = result is None
+
+            while not failed:
                 # calculate fok
-                fok = fok_function(store, step.query_terms, result, query_time)
-                print('fok = ' + str(fok))
-                # if the result doesn't fit the constraints, move on
-                if not all(result[attr] == val for attr, val in step.constraints.items()):
-                    result = store.next_result()
-                    continue
-                if result is not None:
-                    print(result[step.result_attr])
+                fok = fok_function(store, step.query_terms, result['node_id'], time)
+                print('step ' + str(step_num) + ' fok = ' + str(fok))
+                if all(result[attr] == val for attr, val in step.constraints.items()):
+                    # if the constraints are met, move on to the next step
+                    prev_result = result[step.result_attr]
                     break
+                elif store.has_next_result:
+                    # if there is a next result, move on to the next result
+                    result = store.next_result(time)
+                else:
+                    # otherwise, we've hit a dead end
+                    print('this is a dead end')
+                    failed = True
+
+            if failed:
+                break
 
 
 test_model()
