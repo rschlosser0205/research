@@ -3,20 +3,21 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
+Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
 
 TASKS = {
     'jeopardy_grid': Task(
         knowledge_list=[
-            ['plan_showing_streets', {'type': 'object'}],
-            ['node_map', {'also_called': 'plan_showing_streets', 'num_letters': '3', 'name': 'map'}],
-            ['node_street_network', {'also_called': 'plan_showing_streets', 'num_letters': '14', 'name': 'street_network'}],
-            ['node_bus_routes', {'also_called': 'plan_showing_streets', 'num_letters': '9', 'name': 'bus_routes'}],
-            ['node_freeway_system', {'also_called': 'plan_showing_streets', 'num_letters': '13', 'name': 'freeway_system'}],
-            ['node_grid', {'also_called': 'plan_showing_streets', 'num_letters': '4', 'name': 'grid'}],
-            ['node_road', {'also_called': 'street', 'num_letters': '4', 'name': 'road'}],
-            ['node_pedestrian', {'also_called': 'walker', 'num_letters': '10', 'name': 'pedestrian'}],
-            ['node_lane', {'part_of_a': 'road', 'num_letters': '4', 'name': 'lane'}],
+            Knowledge('plan_showing_streets', {'type': 'object'}),
+            Knowledge('node_map', {'also_called': 'plan_showing_streets', 'num_letters': '3', 'name': 'map'}),
+            Knowledge('node_street_network', {'also_called': 'plan_showing_streets', 'num_letters': '14', 'name': 'street_network'}),
+            Knowledge('node_bus_routes', {'also_called': 'plan_showing_streets', 'num_letters': '9', 'name': 'bus_routes'}),
+            Knowledge('node_freeway_system', {'also_called': 'plan_showing_streets', 'num_letters': '13', 'name': 'freeway_system'}),
+            Knowledge('node_grid', {'also_called': 'plan_showing_streets', 'num_letters': '4', 'name': 'grid'}),
+            Knowledge('node_road', {'also_called': 'street', 'num_letters': '4', 'name': 'road'}),
+            Knowledge('node_pedestrian', {'also_called': 'walker', 'num_letters': '10', 'name': 'pedestrian'}),
+            Knowledge('node_lane', {'part_of_a': 'road', 'num_letters': '4', 'name': 'lane'}),
         ],
         retrieval_steps=[
             RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
@@ -25,7 +26,7 @@ TASKS = {
     ),
     'jeopardy_marapi': Task(
         knowledge_list=[
-            ['indonesia', {
+            Knowledge('indonesia', {
                     'type': 'country',
                     'capital': 'jakarta',
                     'official language': 'indonesian',
@@ -39,18 +40,18 @@ TASKS = {
                     'climate': 'tropical',
                     'name': 'Indonesia',
                     'colonized by': 'Netherlands',
-            }],
-            ['indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}],
-            [
+            }),
+            Knowledge('indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}),
+            Knowledge(
                 'pacific ocean', {
                     'type': 'ocean',
                     'contributes to formation of': 'volcanoes',
                     'notable': 'largest ocean',
                     'name': 'Pacific Ocean',
                 },
-            ],
-            ['mountain', {'type': 'landform', 'comes from': 'volcano', 'name': 'Mountain'}],
-            [
+            ),
+            Knowledge('mountain', {'type': 'landform', 'comes from': 'volcano', 'name': 'Mountain'}),
+            Knowledge(
                 'volcano', {
                     'type': 'leak',
                     'comes from': 'tectonic plates',
@@ -64,24 +65,24 @@ TASKS = {
                     'famous example from modernity': 'krakatoa',
                     'related to': 'fire',
                 },
-            ],
-            ['lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},],
-            ['krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}],
-            ['fire', {'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}],
-            ['jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}],
-            ['yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}],
-            ['pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}],
-            ['tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}],
-            ['kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}],
-            ['kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}],
-            ['sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}],
-            ['toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}],
-            ['danau batur', {'type': 'lake', 'located in': 'indonesia', 'name': 'Danau Batur', 'formed by': 'volcano'}],
-            ['linow', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Linow', 'formed by': 'volcano'}],
-            ['citarum', {'type': 'river', 'located in': 'indonesia', 'name': 'Citarum', 'flows to': 'java sea'}],
-            ['mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}],
-            ['java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}],
-            ['sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}],
+            ),
+            Knowledge('lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},),
+            Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}),
+            Knowledge('fire', {'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
+            Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
+            Knowledge('yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}),
+            Knowledge('pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}),
+            Knowledge('tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}),
+            Knowledge('kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}),
+            Knowledge('kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}),
+            Knowledge('sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}),
+            Knowledge('toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}),
+            Knowledge('danau batur', {'type': 'lake', 'located in': 'indonesia', 'name': 'Danau Batur', 'formed by': 'volcano'}),
+            Knowledge('linow', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Linow', 'formed by': 'volcano'}),
+            Knowledge('citarum', {'type': 'river', 'located in': 'indonesia', 'name': 'Citarum', 'flows to': 'java sea'}),
+            Knowledge('mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}),
+            Knowledge('java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}),
+            Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
         ],
         retrieval_steps=[
             RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
@@ -95,14 +96,14 @@ TASKS = {
     ),
     'jeopardy_oval_office': Task(
         knowledge_list=[
-            ['oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}],
-            ['white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}],
-            ['oval', {'is_a': 'shape', 'num_sides': '0'}],
-            ['square', {'is_a': 'shape', 'num_sides': '4'}],
-            ['circle', {'is_a': 'shape', 'num_sides': '0'}],
-            ['nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois'}],
-            ['william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}],
-            ['1909', {'marks_opening_of': 'manhattan_bridge'}],
+            Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
+            Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
+            Knowledge('oval', {'is_a': 'shape', 'num_sides': '0'}),
+            Knowledge('square', {'is_a': 'shape', 'num_sides': '4'}),
+            Knowledge('circle', {'is_a': 'shape', 'num_sides': '0'}),
+            Knowledge('nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois'}),
+            Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
+            Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
         retrieval_steps=[
             RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
@@ -125,14 +126,14 @@ def create_paired_recall_tasks():
             # determine attributes
             if representation == 'direct':
                 attributes = {'goes_to_' + paradigm[i + 1].lower(): paradigm[i + 1]}
-                knowledge_list.append([paradigm[i], attributes])
+                knowledge_list.append(Knowledge(paradigm[i], attributes))
             elif representation == 'pairs':
                 # print(representation)
                 attributes = {'first': paradigm[i], 'second': paradigm[i + 1]}
-                knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
+                knowledge_list.append(Knowledge(paradigm[i] + paradigm[i + 1], attributes))
             elif representation == 'types':
                 attributes = {'first': paradigm[i], 'second': paradigm[i + 1], 'type': 'pairs'}
-                knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
+                knowledge_list.append(Knowledge(paradigm[i] + paradigm[i + 1], attributes))
 
         if representation == 'direct':
             retrieval_steps = [
@@ -232,12 +233,8 @@ def avg_activation_of_everything(store, terms, result, query_time):
 
 
 def populate(store, link, store_time, activate_on_store, knowledge_list):
-    for node in knowledge_list:
-        mem_id = node[0]
-        attributes = {}
-        for (attr, val) in node[1]:
-            attributes[attr] = val
-        store.store(store_time, link, activate_on_store, mem_id, **attributes)
+    for knowledge in knowledge_list:
+        store.store(store_time, link, activate_on_store, knowledge.node_id, **knowledge.attributes)
         store_time += 1
     return store_time
 
