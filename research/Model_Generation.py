@@ -5,88 +5,110 @@ from research.rl_memory import ActivationClass, NetworkXKB
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, act_on')
 RetrievalStep = namedtuple('RetrievalStep', 'action, terms, constraints, result_attr')
 
+
 TASKS = {
     'jeopardy_grid': Task(
         knowledge_list=[
-            ['plan_showing_streets', [('type', 'object')]],
-            ['node_map', [('also_called', 'plan_showing_streets'), ('num_letters', '3'), ('name', 'map')]],
-            ['node_street_network', [('also_called', 'plan_showing_streets'), ('num_letters', '14'), ('name', 'street_network')]],
-            ['node_bus_routes', [('also_called', 'plan_showing_streets'), ('num_letters', '9'), ('name','bus_routes')]],
-            ['node_freeway_system', [('also_called', 'plan_showing_streets'), ('num_letters', '13'), ('name','freeway_system')]],
-            ['node_grid', [('also_called','plan_showing_streets'), ('num_letters', '4'), ('name', 'grid')]],
-            ['node_road', [('also_called', 'street'), ('num_letters', '4'), ('name', 'road')]],
-            ['node_pedestrian', [('also_called', 'walker'), ('num_letters', '10'), ('name', 'pedestrian')]],
-            ['node_lane', [('part_of_a', 'road'), ('num_letters', '4'), ('name', 'lane')]],
+            ['plan_showing_streets', {'type': 'object'}],
+            ['node_map', {'also_called': 'plan_showing_streets', 'num_letters': '3', 'name': 'map'}],
+            ['node_street_network', {'also_called': 'plan_showing_streets', 'num_letters': '14', 'name': 'street_network'}],
+            ['node_bus_routes', {'also_called': 'plan_showing_streets', 'num_letters': '9', 'name': 'bus_routes'}],
+            ['node_freeway_system', {'also_called': 'plan_showing_streets', 'num_letters': '13', 'name': 'freeway_system'}],
+            ['node_grid', {'also_called': 'plan_showing_streets', 'num_letters': '4', 'name': 'grid'}],
+            ['node_road', {'also_called': 'street', 'num_letters': '4', 'name': 'road'}],
+            ['node_pedestrian', {'also_called': 'walker', 'num_letters': '10', 'name': 'pedestrian'}],
+            ['node_lane', {'part_of_a': 'road', 'num_letters': '4', 'name': 'lane'}],
         ],
         retrieval_steps=[
-            RetrievalStep('query', {'also_called': 'plan_showing_streets'}, [{'num_letters': '4'}], 'name'),
+            RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
         ],
-        act_on=False
+        act_on=False,
     ),
     'jeopardy_marapi': Task(
         knowledge_list=[
-            ['indonesia', [
-                ('type', 'country'), ('capital', 'jakarta'), ('official language', 'indonesian'),
-                ('currency', 'indonesian rupiah'), ('driving side', 'left'), ('located in', 'southeast asia'),
-                ('made up of', 'islands'), ('ocean to the west', 'indian ocean'), ('ocean to the east', 'pacific ocean'),
-                ('topography', 'mountains'), ('climate', 'tropical'), ('name', 'Indonesia'), ('colonized by', 'Netherlands')]
+            ['indonesia', {
+                    'type': 'country',
+                    'capital': 'jakarta',
+                    'official language': 'indonesian',
+                    'currency': 'indonesian rupiah',
+                    'driving side': 'left',
+                    'located in': 'southeast asia',
+                    'made up of': 'islands',
+                    'ocean to the west': 'indian ocean',
+                    'ocean to the east': 'pacific ocean',
+                    'topography': 'mountains',
+                    'climate': 'tropical',
+                    'name': 'Indonesia',
+                    'colonized by': 'Netherlands',
+            }],
+            ['indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}],
+            [
+                'pacific ocean', {
+                    'type': 'ocean',
+                    'contributes to formation of': 'volcanoes',
+                    'notable': 'largest ocean',
+                    'name': 'Pacific Ocean',
+                },
             ],
-            ['indian ocean', [('type', 'ocean'), ('name', 'Indian Ocean')]],
-            ['pacific ocean', [
-                ('type', 'ocean'), ('contributes to formation of', 'volcanoes'), ('notable', 'largest ocean'),
-                ('name', 'Pacific Ocean')]
+            ['mountain', {'type': 'landform', 'comes from': 'volcano', 'name': 'Mountain'}],
+            [
+                'volcano', {
+                    'type': 'leak',
+                    'comes from': 'tectonic plates',
+                    'produces': 'heat',
+                    'expels': 'ash',
+                    'full of': 'lava',
+                    'name': 'Volcano',
+                    'is a': 'mountain',
+                    'can be called': 'fire mountain',
+                    'famous example from antiquity': 'mt vesuvius',
+                    'famous example from modernity': 'krakatoa',
+                    'related to': 'fire',
+                },
             ],
-            ['mountain', [('type', 'landform'), ('comes from', 'volcano'), ('name', 'Mountain')]],
-            ['volcano', [
-                ('type', 'leak'), ('comes from', 'tectonic plates'), ('produces', 'heat'), ('expels', 'ash'),
-                ('full of', 'lava'), ('name', 'Volcano'), ('is a', 'mountain'),
-                ('can be called', 'fire mountain'), ('famous example from antiquity', 'mt vesuvius'),
-                ('famous example from modernity', 'krakatoa'), ('related to', 'fire')]
-            ],
-            ['lava', [('type', 'molten rock'), ('located in', 'volcano'), ('gives off', 'heat'), ('related to', 'fire'), ('inside', 'mountain'), ('name', 'Lava')],],
-            ['krakatoa', [('type', 'volcano'), ('located in', 'indonesia'), ('last eruption', '2020'), ('is a', 'mountain'), ('name', 'Krakatoa')]],
-            ['fire', [('type', 'chemical reaction'), ('related to', 'heat'), ('results in', 'ash'), ('name', 'Fire')]],
-            ['jakarta', [('type', 'city'), ('capital of', 'indonesia'), ('located in', 'indonesia'), ('population', '9.6 million'), ('name', 'Jakarta')]],
-            ['yamin', [('type', 'mountain'), ('located in', 'indonesia'), ('height', '4540 m'), ('name', 'Yamin')]],
-            ['pangrango', [('type', 'volcano'), ('located in', 'indonesia'), ('status', 'dormant'), ('name', 'Pangrango'), ('is a', 'mountain')]],
-            ['tujuh', [('type', 'volcano'), ('located in', 'indonesia'), ('is a', 'mountain'), ('name', 'Tujuh')]],
-            ['kelimutu', [('type', 'volcano'), ('located in', 'indonesia'), ('name', 'Kelimutu'), ('last eruption', '1968'), ('is a', 'mountain')]],
-            ['kapalatmada', [('type', 'mountain'), ('located in', 'indonesia'), ('name', 'Kapalatmada'), ('height', '2428m')]],
-            ['sentani', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Sentani')]],
-            ['toba', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Toba')]],
-            ['danau batur', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Danau Batur'), ('formed by', 'volcano')]],
-            ['linow', [('type', 'lake'), ('located in', 'indonesia'), ('name', 'Lake Linow'), ('formed by', 'volcano')]],
-            ['citarum', [('type', 'river'), ('located in', 'indonesia'), ('name', 'Citarum'), ('flows to', 'java sea')]],
-            ['mahakam', [('type', 'river'), ('located in', 'indonesia'), ('name', 'Mahakam'), ('flows to', 'makassar strait')]],
-            ['java', [('type', 'island'), ('located in', 'indonesia'), ('name', 'Java')]],
-            ['sumatra', [('type', 'island'), ('located in', 'indonesia'), ('name', 'Sumatra')]],
-
-
+            ['lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},],
+            ['krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}],
+            ['fire', {'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}],
+            ['jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}],
+            ['yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}],
+            ['pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}],
+            ['tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}],
+            ['kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}],
+            ['kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}],
+            ['sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}],
+            ['toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}],
+            ['danau batur', {'type': 'lake', 'located in': 'indonesia', 'name': 'Danau Batur', 'formed by': 'volcano'}],
+            ['linow', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Linow', 'formed by': 'volcano'}],
+            ['citarum', {'type': 'river', 'located in': 'indonesia', 'name': 'Citarum', 'flows to': 'java sea'}],
+            ['mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}],
+            ['java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}],
+            ['sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}],
         ],
         retrieval_steps=[
-            RetrievalStep('query', {'famous example': 'marapi'},[], 'name'),
-            RetrievalStep('query', {'located in': 'indonesia'}, [{'is a': 'mountain'}], 'name'),
-            RetrievalStep('query', {'is a': 'mountain'}, [{'related to': 'fire'}], 'name'), # free associate on mountain
-            RetrievalStep('query', {'related to': 'fire'}, [{'inside': 'mountain'}], 'located in'), # free associate on fire
+            RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
+            RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'name'),
+            # free associate on mountain
+            RetrievalStep('query', {'is a': 'mountain'}, {'related to': 'fire'}, 'name'),
+            # free associate on fire
+            RetrievalStep('query', {'related to': 'fire'}, {'inside': 'mountain'}, 'located in'),
         ],
-        act_on=False
+        act_on=False,
     ),
     'jeopardy_oval_office': Task(
         knowledge_list=[
-            ['oval_office', [('is_a', 'room'), ('located_in', 'the_white_house'), ('first_word', 'oval'),
-             ('second_word', 'office'), ('designed_by', 'nathan_c_wyeth'), ('name', 'Oval Office')]],
-            ['white_house', [('is_a', 'building'), ('houses', 'president'), ('has', 'room'), ('famous_room', 'oval_office')]],
-            ['oval', [('is_a', 'shape'), ('num_sides', '0')]],
-            ['square', [('is_a', 'shape'), ('num_sides', '4')]],
-            ['circle', [('is_a', 'shape'), ('num_sides', '0')]],
-            ['nathan_c_wyeth', [('is_a', 'architect'), ('worked_on', 'the_white_house'), ('born_in', 'illinois')]],
-            ['william_taft', [('is_a', 'president'), ('president_number', '27'), ('assumed_office_in', '1909'), ('ordered_construction_of', 'oval_office')]],
-            ['1909', [('marks_opening_of', 'manhattan_bridge')]],
+            ['oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}],
+            ['white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}],
+            ['oval', {'is_a': 'shape', 'num_sides': '0'}],
+            ['square', {'is_a': 'shape', 'num_sides': '4'}],
+            ['circle', {'is_a': 'shape', 'num_sides': '0'}],
+            ['nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois'}],
+            ['william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}],
+            ['1909', {'marks_opening_of': 'manhattan_bridge'}],
         ],
         retrieval_steps=[
-            RetrievalStep('query', {'is_a': 'room'}, [{'designed_by': 'nathan_c_wyeth'}, {'located_in': 'the_white_house'}], 'name'),
+            RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
         ],
-        act_on=False
+        act_on=False,
     ),
 }
 
@@ -103,27 +125,27 @@ def create_paired_recall_tasks():
         for i in range(0, 4, 2):
             # determine attributes
             if representation == 'direct':
-                attributes = [('goes_to_' + paradigm[i+1].lower(), paradigm[i+1])]
+                attributes = {'goes_to_' + paradigm[i + 1].lower(): paradigm[i + 1]}
                 knowledge_list.append([paradigm[i], attributes])
             elif representation == 'pairs':
                 # print(representation)
-                attributes = [('first', paradigm[i]), ('second', paradigm[i+1])]
-                knowledge_list.append([paradigm[i]+paradigm[i+1], attributes])
+                attributes = {'first': paradigm[i], 'second': paradigm[i + 1]}
+                knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
             elif representation == 'types':
-                attributes = [('first', paradigm[i]), ('second', paradigm[i+1]), ('type', 'pairs')]
+                attributes = {'first': paradigm[i], 'second': paradigm[i + 1], 'type': 'pairs'}
                 knowledge_list.append([paradigm[i] + paradigm[i + 1], attributes])
 
         if representation == 'direct':
             retrieval_steps = [
-                RetrievalStep('query', {'goes_to_b': 'B'}, [], 'node_id'),
+                RetrievalStep('query', {'goes_to_b': 'B'}, {}, 'node_id'),
             ]
         elif representation == 'pairs':
             retrieval_steps = [
-                RetrievalStep('query', {'first': 'A'}, [], 'second'),
+                RetrievalStep('query', {'first': 'A'}, {}, 'second'),
             ]
         elif representation == 'types':
             retrieval_steps = [
-                RetrievalStep('query', {'first': 'A'}, [], 'second'),
+                RetrievalStep('query', {'first': 'A'}, {}, 'second'),
             ]
 
         globals()['TASKS'][variable_name] = Task(
