@@ -5,6 +5,64 @@ from research.rl_memory import ActivationClass, NetworkXKB
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
+volcano_knowledge_list = Knowledge('indonesia', {
+                    'type': 'country',
+                    'capital': 'jakarta',
+                    'official language': 'indonesian',
+                    'currency': 'indonesian rupiah',
+                    'driving side': 'left',
+                    'located in': 'southeast asia',
+                    'made up of': 'islands',
+                    'ocean to the west': 'indian ocean',
+                    'ocean to the east': 'pacific ocean',
+                    'topography': 'mountains',
+                    'climate': 'tropical',
+                    'name': 'Indonesia',
+                    'colonized by': 'Netherlands',
+            }),
+Knowledge('indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}),
+Knowledge(
+    'pacific ocean', {
+        'type': 'ocean',
+        'contributes to formation of': 'volcanoes',
+        'notable': 'largest ocean',
+        'name': 'Pacific Ocean',
+    },
+),
+Knowledge('mountain', {'type': 'landform', 'comes from': 'volcano', 'name': 'Mountain'}),
+Knowledge('hill', {'type': 'landform', 'similar to': 'mountain', 'smaller than': 'mountain', 'name': 'Hill', 'covered_in': 'grass'})
+Knowledge(
+    'volcano', {
+        'type': 'leak',
+        'comes from': 'tectonic plates',
+        'produces': 'heat',
+        'expels': 'ash',
+        'full of': 'lava',
+        'name': 'Volcano',
+        'similar to': 'mountain',
+        'can be called': 'fire mountain',
+        'famous example from antiquity': 'mt vesuvius',
+        'famous example from modernity': 'krakatoa',
+        'related to': 'fire',
+    },
+),
+Knowledge('lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},),
+Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}),
+Knowledge('fire', {'consumes': 'grass', 'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
+Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
+Knowledge('yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}),
+Knowledge('pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}),
+Knowledge('tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}),
+Knowledge('kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}),
+Knowledge('kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}),
+Knowledge('sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}),
+Knowledge('toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}),
+Knowledge('danau batur', {'type': 'lake', 'located in': 'indonesia', 'name': 'Danau Batur', 'formed by': 'volcano'}),
+Knowledge('linow', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Linow', 'formed by': 'volcano'}),
+Knowledge('citarum', {'type': 'river', 'located in': 'indonesia', 'name': 'Citarum', 'flows to': 'java sea'}),
+Knowledge('mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}),
+Knowledge('java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}),
+Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
 
 TASKS = {
     'jeopardy_grid': Task(
@@ -24,78 +82,49 @@ TASKS = {
         ],
         activate_on_store=False,
     ),
-    'jeopardy_marapi': Task(
-        knowledge_list=[
-            Knowledge('indonesia', {
-                    'type': 'country',
-                    'capital': 'jakarta',
-                    'official language': 'indonesian',
-                    'currency': 'indonesian rupiah',
-                    'driving side': 'left',
-                    'located in': 'southeast asia',
-                    'made up of': 'islands',
-                    'ocean to the west': 'indian ocean',
-                    'ocean to the east': 'pacific ocean',
-                    'topography': 'mountains',
-                    'climate': 'tropical',
-                    'name': 'Indonesia',
-                    'colonized by': 'Netherlands',
-            }),
-            Knowledge('indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}),
-            Knowledge(
-                'pacific ocean', {
-                    'type': 'ocean',
-                    'contributes to formation of': 'volcanoes',
-                    'notable': 'largest ocean',
-                    'name': 'Pacific Ocean',
-                },
-            ),
-            Knowledge('mountain', {'type': 'landform', 'comes from': 'volcano', 'name': 'Mountain'}),
-            Knowledge(
-                'volcano', {
-                    'type': 'leak',
-                    'comes from': 'tectonic plates',
-                    'produces': 'heat',
-                    'expels': 'ash',
-                    'full of': 'lava',
-                    'name': 'Volcano',
-                    'is a': 'mountain',
-                    'can be called': 'fire mountain',
-                    'famous example from antiquity': 'mt vesuvius',
-                    'famous example from modernity': 'krakatoa',
-                    'related to': 'fire',
-                },
-            ),
-            Knowledge('lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},),
-            Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}),
-            Knowledge('fire', {'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
-            Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
-            Knowledge('yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}),
-            Knowledge('pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}),
-            Knowledge('tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}),
-            Knowledge('kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}),
-            Knowledge('kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}),
-            Knowledge('sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}),
-            Knowledge('toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}),
-            Knowledge('danau batur', {'type': 'lake', 'located in': 'indonesia', 'name': 'Danau Batur', 'formed by': 'volcano'}),
-            Knowledge('linow', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Linow', 'formed by': 'volcano'}),
-            Knowledge('citarum', {'type': 'river', 'located in': 'indonesia', 'name': 'Citarum', 'flows to': 'java sea'}),
-            Knowledge('mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}),
-            Knowledge('java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}),
-            Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
-        ],
+    'jeopardy_volcano_to_marapi': Task(
+        knowledge_list= volcano_knowledge_list,
         retrieval_steps=[
             RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
-            RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'name'),
-            # free associate on mountain
-            RetrievalStep('query', {'is a': 'mountain'}, {'related to': 'fire'}, 'name'),
-            # free associate on fire
-            RetrievalStep('query', {'related to': 'fire'}, {'inside': 'mountain'}, 'located in'),
+
         ],
         activate_on_store=False,
     ),
+    'jeopardy_volcano_fire': Task(
+            knowledge_list= volcano_knowledge_list,
+            retrieval_steps=[
+                RetrievalStep('query', {'related to': 'fire'}, {'inside': 'mountain'}, 'node_id'), # gives lava
+                RetrievalStep('retrieve', {}, {}, 'located in'), # returns volcano
+            ],
+            activate_on_store=False,
+        ),
+    'jeopardy_volcano_indonesia_mountain': Task(
+            knowledge_list= volcano_knowledge_list,
+            retrieval_steps=[
+                RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'node_id'),
+                RetrievalStep('retrieve', {}, {}, 'type'), # returns volcano
+            ],
+            activate_on_store=False,
+        ),
+    'jeopardy_volcano_mountain': Task(
+            knowledge_list= volcano_knowledge_list,
+            retrieval_steps=[
+                # free associate on mountain
+                RetrievalStep('query', {'similar to': 'mountain'}, {'related to': 'fire'}, 'name'),
+                # free associate on fire
+            ],
+            activate_on_store=False,
+        ),
+    # 'jeopardy_marapi_to_volcano': Task(
+    #             knowledge_list= volcano_knowledge_list,
+    #             retrieval_steps=[
+    #                 RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
+    #
+    #             ],
+    #             activate_on_store=False,
+    #         ),
     'jeopardy_oval_office': Task(
-        knowledge_list=[
+            knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
             Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
             Knowledge('oval', {'is_a': 'shape', 'num_sides': '0'}),
@@ -105,11 +134,12 @@ TASKS = {
             Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
             Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
-        retrieval_steps=[
-            RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
+            retrieval_steps=[
+                RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
         ],
-        activate_on_store=False,
-    ),
+            activate_on_store=False,
+        ),
+
 }
 
 
@@ -173,12 +203,17 @@ def determine_fok_function(method):
         return total_edges_fok
     elif method == 'act by edges':
         return act_by_edges_fok
-    elif method == 'avg_activation_of_everything':
+    elif method == 'avg activation of everything':
         return avg_activation_of_everything
+    elif method == 'results looked through':
+        return results_looked_through_fok
+    elif method == 'step num':
+        return step_num_fok
+
 
 
 # terms is {attribute : node}, like {first : A}
-def cue_fok(store, terms, result, query_time):
+def cue_fok(store, terms, result, query_time, results_looked_through, step_num):
     # if the cue node is in the graph, proceed. (for the marapi cue this returns 0)
     return sum(
         store.get_activation(cue, (query_time - 0.0001))
@@ -186,35 +221,35 @@ def cue_fok(store, terms, result, query_time):
     )
 
 
-def target_fok(store, terms, result, query_time):
+def target_fok(store, terms, result, query_time, results_looked_through, step_num):
     if result is None:
         return 0
     return store.get_activation(result, (query_time - 0.0001))
 
 
-def cue_and_target_fok(store, terms, result, query_time):
+def cue_and_target_fok(store, terms, result, query_time, results_looked_through, step_num):
     if result is None:
         return 0
     total = sum(store.get_activation(cue, (query_time - 0.0001)) for cue in terms.values())
     return total + store.get_activation(result, (query_time - 0.0001))
 
 
-def incoming_edges_fok(store, terms, result, query_time):
+def incoming_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(len(store.graph.in_edges(cue)) for cue in terms.values())
 
 
-def outgoing_edges_fok(store, terms, result, query_time):
+def outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(len(store.graph.out_edges(cue)) for cue in terms.values())
 
 
-def total_edges_fok(store, terms, result, query_time):
+def total_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(
         len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
         for cue in terms.values()
     )
 
 
-def act_by_edges_fok(store, terms, result, query_time):
+def act_by_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(
         (
             (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue)))
@@ -224,12 +259,23 @@ def act_by_edges_fok(store, terms, result, query_time):
     )
 
 
-def avg_activation_of_everything(store, terms, result, query_time):
+def avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
     return sum(
         store.get_activation(node, (query_time - 0.0001))
         for node in all_nodes
     ) / len(all_nodes)
+
+def results_looked_through_fok(store, terms, result, query_time, results_looked_through, step_num):
+    if results_looked_through != 0:
+        return 1/results_looked_through
+    return 0
+
+def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
+    if step_num != 0:
+        return 1/step_num
+    return 0
+
 
 
 def populate(store, link, store_time, activate_on_store, knowledge_list):
@@ -240,6 +286,8 @@ def populate(store, link, store_time, activate_on_store, knowledge_list):
 
 
 def test_model():
+    links_so_far = 0
+    queries_so_far = 0
     act_decay_rate = [-0.42, -0.41]
     act_scale_factor = [0.5, 0.6]
     act_max_steps = [1, 2, 3]
@@ -247,7 +295,7 @@ def test_model():
     backlinks = [False, True]
     fok_method = [
         'incoming edges', 'act by edges', 'total edges', 'cue and target', 'cue', 'target',
-        'outgoing edges', 'avg_activation_of_everything'
+        'outgoing edges', 'avg activation of everything', 'results looked through', 'step num'
     ]
     #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything
     store_time = 0
@@ -293,16 +341,18 @@ def test_model():
                 return
 
             failed = result is None
+            results_looked_through = 1
 
             while not failed:
                 # calculate fok
-                fok = fok_function(store, step.query_terms, result['node_id'], time)
+                fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' fok = ' + str(fok))
                 if all(result[attr] == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
                     prev_result = result[step.result_attr]
                     break
                 elif store.has_next_result:
+                    results_looked_through += 1
                     # if there is a next result, move on to the next result
                     result = store.next_result(time)
                 else:
