@@ -453,13 +453,17 @@ class NetworkXKB(KnowledgeStore):
         self.query_results = None
         self.result_index = None
 
-    def get_activation(self, mem_id, current_time):
-        # returning activation number using time stamp list ????
+    def get_activation(self, mem_id, current_time, pre_query):
+        # if pre_query, ignore all tuples with the most recent time stamp
         total_act = 0
-        # print(mem_id)
+        if len(self.graph.nodes[mem_id]['activation']) > 0:
+            ignore_time, data = self.graph.nodes[mem_id]['activation'][0]
         for time_stamp, scale_factor in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
             if time_since < 0: # time travel: ignore this tuple
+                continue
+            elif pre_query and time_stamp == ignore_time:
+                # activation is from query, ignore this tuple
                 continue
             elif time_since == 0: # time_since approaches zero
                 total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
@@ -515,7 +519,8 @@ class NetworkXKB(KnowledgeStore):
             return None
         return self._activate_and_return(time_stamp, mem_id)
 
-    def query(self, time_stamp, attr_vals): # noqa: D102
+    def query(self, time_stamp, pre_query, attr_vals):  # noqa: D102
+
         # first pass: get candidates with all the attributes
         candidates = set.intersection(*(
             self.inverted_index[attribute] for attribute in attr_vals.keys()
@@ -534,9 +539,9 @@ class NetworkXKB(KnowledgeStore):
             self.result_index = None
             return None
         # final pass: sort results by activation
-        self.query_results = sorted(          # do we need to use our get activation function here? jk we did woo
+        self.query_results = sorted(
             candidates,
-            key=(lambda mem_id: self.get_activation(mem_id, time_stamp)),
+            key=(lambda mem_id: self.get_activation(mem_id, time_stamp, pre_query)),
             reverse=True,
         )
         self.result_index = 0
@@ -713,10 +718,9 @@ class ActivationClass:
 
     def _activate(self, visited, graph, mem_id, time_stamp, scale_factor, max_steps):
         # appends time stamp and scale factor
-        graph.nodes[mem_id]['activation'].append((time_stamp, scale_factor))
+        graph.nodes[mem_id]['activation'].insert(0, (time_stamp, scale_factor))
         result = list(graph.successors(mem_id))
 
-        # FIXME? activation is very diluted according to this if we allow backlinks
         if self.capped and len(result) > 0:
             sharing = 1/len(result)
         else:
