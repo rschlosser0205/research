@@ -355,7 +355,7 @@ def test_model():
                 fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' fok = ' + str(fok))
                 # FIXME generator fails when constraints is empty
-                if all(result[attr] == val for attr, val in step.constraints.items()):
+                if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
                     prev_result = result[step.result_attr]
                     break
