@@ -36,17 +36,17 @@ volcano_knowledge_list = [Knowledge('indonesia', {
                 'type': 'leak',
                 'comes from': 'tectonic plates',
                 'produces': 'heat',
-                'expels': 'ash',
-                'full of': 'lava',
+                'expels': 'lava',
+                'full of': 'magma',
                 'name': 'Volcano',
                 'similar to': 'mountain',
                 'can be called': 'fire mountain',
                 'famous example from antiquity': 'mt vesuvius',
                 'famous example from modernity': 'krakatoa',
-                'related to': 'fire',
             },
         ),
-        Knowledge('lava', {'type': 'molten rock', 'located in': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'inside': 'mountain', 'name': 'Lava'},),
+        Knowledge('lava', {'type': 'molten rock', 'expelled from': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'formerly': 'magma', 'name': 'Lava', 'associated with': 'volcano'}),
+        Knowledge('magma', {'type': 'molten rock', 'inside': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'name': 'Magma', 'associated with': 'volcano'}),
         Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}),
         Knowledge('fire', {'consumes': 'grass', 'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
         Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
@@ -82,15 +82,6 @@ TASKS = {
         ],
         activate_on_store=False,
     ),
-    'jeopardy_volcano_to_marapi': Task(
-        knowledge_list=volcano_knowledge_list,
-        retrieval_steps=[
-            RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
-        ],
-        activate_on_store=False,
-    ),
-
-
 
     'jeopardy_volcano_to_marapi': Task(
         knowledge_list=volcano_knowledge_list,
@@ -103,36 +94,32 @@ TASKS = {
     'jeopardy_volcano_fire': Task(
             knowledge_list=volcano_knowledge_list,
             retrieval_steps=[
-                RetrievalStep('query', {'related to': 'fire'}, {'inside': 'mountain'}, 'node_id'),  # gives lava
-                RetrievalStep('retrieve', {}, {}, 'located in'),  # returns volcano
+                RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')
             ],
             activate_on_store=False,
         ),
     'jeopardy_volcano_indonesia_mountain': Task(
             knowledge_list= volcano_knowledge_list,
             retrieval_steps=[
-                RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'node_id'),
-                RetrievalStep('retrieve', {}, {}, 'type'), # returns volcano
+                RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
             ],
             activate_on_store=False,
         ),
     'jeopardy_volcano_mountain': Task(
             knowledge_list= volcano_knowledge_list,
             retrieval_steps=[
-                # free associate on mountain
-                RetrievalStep('query', {'similar to': 'mountain'}, {'related to': 'fire'}, 'name'),
-                # free associate on fire
+                # free associate on mountain (may return hill)
+                RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
             ],
             activate_on_store=False,
         ),
-    # 'jeopardy_marapi_to_volcano': Task(
-    #             knowledge_list= volcano_knowledge_list,
-    #             retrieval_steps=[
-    #                 RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
-    #
-    #             ],
-    #             activate_on_store=False,
-    #         ),
+    'jeopardy_marapi_to_volcano': Task(
+                knowledge_list= volcano_knowledge_list,
+                retrieval_steps=[
+                    RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),
+                ],
+                activate_on_store=False,
+            ),
     'jeopardy_oval_office': Task(
             knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
@@ -140,12 +127,31 @@ TASKS = {
             Knowledge('oval', {'is_a': 'shape', 'num_sides': '0'}),
             Knowledge('square', {'is_a': 'shape', 'num_sides': '4'}),
             Knowledge('circle', {'is_a': 'shape', 'num_sides': '0'}),
-            Knowledge('nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois'}),
+            Knowledge('nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois', 'year_born': '1870'}),
             Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
             Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
             retrieval_steps=[
                 RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
+        ],
+            activate_on_store=False,
+        ),
+
+'jeopardy_nathan_birth_year': Task(
+            knowledge_list=[
+            Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
+            Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
+            Knowledge('oval', {'is_a': 'shape', 'num_sides': '0'}),
+            Knowledge('square', {'is_a': 'shape', 'num_sides': '4'}),
+            Knowledge('circle', {'is_a': 'shape', 'num_sides': '0'}),
+            Knowledge('nathan_c_wyeth', {'is_a': 'architect', 'worked_on': 'the_white_house', 'born_in': 'illinois', 'year_born': '1870'}),
+            Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
+            Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
+        ],
+            retrieval_steps=[
+                RetrievalStep('query', {'is_a': 'room'}, {'located_in': 'the_white_house'}, 'node_id'),
+                RetrievalStep('retrieve', {}, {}, 'designed_by'),
+                RetrievalStep('retrieve', {}, {}, 'year_born')
         ],
             activate_on_store=False,
         ),
@@ -282,9 +288,7 @@ def results_looked_through_fok(store, terms, result, query_time, results_looked_
     return 0
 
 def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
-    if step_num != 0:
-        return 1/step_num
-    return 0
+    return step_num
 
 
 
@@ -307,7 +311,10 @@ def test_model():
     ]
     #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything, 'step_num_fok', 'results_looked_through_fok'
     store_time = 0
-    task_names = list(TASKS.keys())
+    #task_names = list(TASKS.keys())
+    task_names = ['jeopardy_grid', 'jeopardy_volcano_to_marapi', 'jeopardy_volcano_fire',
+                  'jeopardy_volcano_indonesia_mountain', 'jeopardy_volcano_mountain',
+                  'jeopardy_marapi_to_volcano', 'jeopardy_oval_office', 'jeopardy_nathan_birth_year']
 
     generator = product(
         act_decay_rate,
@@ -323,12 +330,13 @@ def test_model():
         task = TASKS[task_name]
         print(', '.join([
             # 'decay rate = ' + str(rate),
+            'task = ' + str(task_name),
+            'fok_method = ' + fok_method,
             'scale factor = ' + str(scale),
             'max steps = ' + str(step),
             'capped = ' + str(cap),
             'backlinks = ' + str(backlink),
-            'fok_method = ' + fok_method,
-            'task = ' + str(task)
+
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, store_time, task.activate_on_store, task.knowledge_list)
@@ -338,6 +346,7 @@ def test_model():
 
         # loop through the retrieval steps
         for step_num, step in enumerate(task.retrieval_steps, start=1):
+            print(step)
             # take the retrieval step
             if step.action == 'query':
                 result = store.query(time, False, step.query_terms)
@@ -370,6 +379,6 @@ def test_model():
 
             if failed:
                 break
-
+        print(prev_result)
 
 test_model()
