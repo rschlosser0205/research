@@ -65,7 +65,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
         Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
     ]
 TASKS = {
-    'jeopardy_grid': Task(
+    'j_grid': Task(
         knowledge_list=[
             Knowledge('plan_showing_streets', {'type': 'object'}),
             Knowledge('node_map', {'also_called': 'plan_showing_streets', 'num_letters': '3', 'name': 'map'}),
@@ -83,7 +83,7 @@ TASKS = {
         activate_on_store=False,
     ),
 
-    'jeopardy_volcano_to_marapi': Task(
+    'j_volcano_to_marapi': Task(
         knowledge_list=volcano_knowledge_list,
         retrieval_steps=[
             RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
@@ -91,21 +91,21 @@ TASKS = {
         ],
         activate_on_store=False,
     ),
-    'jeopardy_volcano_fire': Task(
+    'j_volcano_fire': Task(
             knowledge_list=volcano_knowledge_list,
             retrieval_steps=[
                 RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')
             ],
             activate_on_store=False,
         ),
-    'jeopardy_volcano_indonesia_mountain': Task(
+    'j_indonesia_mountain': Task(
             knowledge_list= volcano_knowledge_list,
             retrieval_steps=[
                 RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
             ],
             activate_on_store=False,
         ),
-    'jeopardy_volcano_mountain': Task(
+    'j_volcano_mountain': Task(
             knowledge_list= volcano_knowledge_list,
             retrieval_steps=[
                 # free associate on mountain (may return hill)
@@ -113,14 +113,14 @@ TASKS = {
             ],
             activate_on_store=False,
         ),
-    'jeopardy_marapi_to_volcano': Task(
+    'j_marapi_to_volcano': Task(
                 knowledge_list= volcano_knowledge_list,
                 retrieval_steps=[
                     RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),
                 ],
                 activate_on_store=False,
             ),
-    'jeopardy_oval_office': Task(
+    'j_oval_office': Task(
             knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
             Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
@@ -137,7 +137,7 @@ TASKS = {
             activate_on_store=False,
         ),
 
-'jeopardy_nathan_birth_year': Task(
+'j_nathan_birth_year': Task(
             knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
             Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
@@ -211,12 +211,10 @@ def determine_fok_function(method):
         return target_fok
     elif method == 'cue and target':
         return cue_and_target_fok
-    elif method == 'incoming edges':
-        return incoming_edges_fok
     elif method == 'outgoing edges':
         return outgoing_edges_fok
-    elif method == 'total edges':
-        return total_edges_fok
+    elif method == 'cue_act_over_all':
+        return cue_act_over_all
     elif method == 'act by edges':
         return act_by_edges_fok
     elif method == 'avg activation of everything':
@@ -249,30 +247,31 @@ def cue_and_target_fok(store, terms, result, query_time, results_looked_through,
     total = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
     return total + store.get_activation(result, query_time, True)
 
-
-def incoming_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return sum(len(store.graph.in_edges(cue)) for cue in terms.values())
-
+def cue_act_over_all(store, terms, result, query_time, results_looked_through, step_num):
+    all_nodes = list(store.graph.nodes)
+    total_act = sum(
+        store.get_activation(node, query_time, True)
+        for node in all_nodes
+    )
+    if total_act == 0:
+        return 0
+    return sum(
+        store.get_activation(cue, query_time, True)
+        / total_act
+        for cue in terms.values()
+    )
 
 def outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(len(store.graph.out_edges(cue)) for cue in terms.values())
 
 
-def total_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return sum(
-        len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue))
-        for cue in terms.values()
-    )
-
-
 def act_by_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(
         (
-            (len(store.graph.in_edges(cue)) + len(store.graph.out_edges(cue)))
-            * store.get_activation(cue, query_time, True)
+            (len(store.graph.out_edges(cue))* store.get_activation(cue, query_time, True)
         )
         for cue in terms.values() if store.graph.has_node(cue)
-    )
+    ))
 
 
 def avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num):
@@ -300,21 +299,21 @@ def populate(store, link, store_time, activate_on_store, knowledge_list):
 
 
 def test_model():
-    act_decay_rate = [-0.42, -0.41]
-    act_scale_factor = [0.5, 0.6]
-    act_max_steps = [1, 2, 3]
+    act_decay_rate = [-0.25]
+    act_scale_factor = [0.5]
+    act_max_steps = [6]
     act_capped = [False, True]
     backlinks = [False, True]
     fok_method = [
-        'incoming edges', 'act by edges', 'total edges', 'cue and target', 'cue', 'target',
+        'act by edges', 'cue and target', 'cue', 'target', 'cue_act_over_all',
         'outgoing edges', 'avg activation of everything', 'results looked through', 'step num'
     ]
     #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything, 'step_num_fok', 'results_looked_through_fok'
     store_time = 0
     #task_names = list(TASKS.keys())
-    task_names = ['jeopardy_grid', 'jeopardy_volcano_to_marapi', 'jeopardy_volcano_fire',
-                  'jeopardy_volcano_indonesia_mountain', 'jeopardy_volcano_mountain',
-                  'jeopardy_marapi_to_volcano', 'jeopardy_oval_office', 'jeopardy_nathan_birth_year']
+    task_names = ['j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
+                  'j_indonesia_mountain', 'j_volcano_mountain',
+                  'j_marapi_to_volcano', 'j_oval_office', 'j_nathan_birth_year']
 
     generator = product(
         act_decay_rate,
@@ -329,13 +328,13 @@ def test_model():
     for rate, scale, step, cap, backlink, fok_method, task_name in generator:
         task = TASKS[task_name]
         print(', '.join([
-            # 'decay rate = ' + str(rate),
             'task = ' + str(task_name),
             'fok_method = ' + fok_method,
-            'scale factor = ' + str(scale),
-            'max steps = ' + str(step),
-            'capped = ' + str(cap),
-            'backlinks = ' + str(backlink),
+            # 'decay rate = ' + str(rate),
+            # 'scale factor = ' + str(scale),
+            # 'max steps = ' + str(step),
+            # 'capped = ' + str(cap),
+            # 'backlinks = ' + str(backlink),
 
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
@@ -358,12 +357,11 @@ def test_model():
 
             failed = result is None
             results_looked_through = 1
-
+            time += 1
             while not failed:
                 # calculate fok
                 fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' fok = ' + str(fok))
-                # FIXME generator fails when constraints is empty
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
                     prev_result = result[step.result_attr]
@@ -376,7 +374,7 @@ def test_model():
                     # otherwise, we've hit a dead end
                     print('this is a dead end')
                     failed = True
-
+                time += 1
             if failed:
                 break
         print(prev_result)
