@@ -1,5 +1,7 @@
 from itertools import product
 from collections import namedtuple
+from statistics import mean
+
 from research.rl_memory import ActivationClass, NetworkXKB
 
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
@@ -279,10 +281,8 @@ def act_by_edges_cue(store, terms, result, query_time, results_looked_through, s
         for cue in terms.values() if store.graph.has_node(cue)
     ))
 
-
 def act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num):
     return len(store.graph.out_edges(result))* store.get_activation(result, query_time, True)
-
 
 def avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
@@ -299,6 +299,12 @@ def results_looked_through_fok(store, terms, result, query_time, results_looked_
 def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
     return step_num
 
+
+def contextualize_fok(historical_fok_list, pure_fok):
+    # store pure fok in a list
+    historical_fok_list.append(pure_fok)
+    # then avg that list and multiply it w pure fok of the current node
+    return (pure_fok * mean(historical_fok_list)), historical_fok_list
 
 
 def populate(store, link, store_time, activate_on_store, knowledge_list):
@@ -318,9 +324,9 @@ def test_model():
         'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
         'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num'
     ]
-    #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything, 'step_num_fok', 'results_looked_through_fok'
-    store_time = 0
-    #task_names = list(TASKS.keys())
+    # 'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target', 'step num',
+    # 'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through',
+    # task_names = list(TASKS.keys())
     task_names = ['j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
                   'j_indonesia_mountain', 'j_volcano_mountain',
                   'j_marapi_to_volcano', 'j_oval_office', 'j_nathan_birth_year']
@@ -348,9 +354,9 @@ def test_model():
 
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
-        time = 1 + populate(store, backlink, store_time, task.activate_on_store, task.knowledge_list)
+        time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
         fok_function = determine_fok_function(fok_method)
-
+        prev_fok = []
         prev_result = None
 
         # loop through the retrieval steps
@@ -361,7 +367,7 @@ def test_model():
                 result = store.query(time, False, step.query_terms)
             elif step.action == 'retrieve':
                 result = store.retrieve(time, prev_result)
-                # FIXME we can reset the fok funtion here for any retrieve steps
+                # FIXME we could reset the fok funtion here for any retrieve steps
             else:
                 print('invalid action: ' + step.action)
                 return
@@ -371,11 +377,16 @@ def test_model():
             time += 1
             while not failed:
                 # calculate fok
-                fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
-                print('step ' + str(step_num) + ' fok = ' + str(fok))
+                pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
+                print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
+
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
                     prev_result = result[step.result_attr]
+                    # and add this current pure fok to the history (?)
+                    # (and this is the step level, I suppose, as this if is the gate to the next step)
+                    informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
+                    print('informed/contextualized fok = ' + str(informed_fok))
                     break
                 elif store.has_next_result:
                     results_looked_through += 1
