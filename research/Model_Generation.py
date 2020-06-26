@@ -211,12 +211,16 @@ def determine_fok_function(method):
         return target_fok
     elif method == 'cue and target':
         return cue_and_target_fok
-    elif method == 'outgoing edges':
-        return outgoing_edges_fok
+    elif method == 'outgoing edges cue':
+        return outgoing_edges_cue_fok
+    elif method == 'outgoing edges target':
+        return outgoing_edges_target_fok
     elif method == 'cue_act_over_all':
         return cue_act_over_all
-    elif method == 'act by edges':
-        return act_by_edges_fok
+    elif method == 'act by edges cue':
+        return act_by_edges_cue
+    elif method == 'act_by_edges_target':
+        return act_by_edges_target
     elif method == 'avg activation of everything':
         return avg_activation_of_everything
     elif method == 'results looked through':
@@ -261,17 +265,23 @@ def cue_act_over_all(store, terms, result, query_time, results_looked_through, s
         for cue in terms.values()
     )
 
-def outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
+def outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num):
     return sum(len(store.graph.out_edges(cue)) for cue in terms.values())
 
+def outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num):
+    return len(store.graph.out_edges(result))
 
-def act_by_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
+def act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num):
     return sum(
         (
             (len(store.graph.out_edges(cue))* store.get_activation(cue, query_time, True)
         )
         for cue in terms.values() if store.graph.has_node(cue)
     ))
+
+
+def act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num):
+    return len(store.graph.out_edges(result))* store.get_activation(result, query_time, True)
 
 
 def avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num):
@@ -305,8 +315,8 @@ def test_model():
     act_capped = [False, True]
     backlinks = [False, True]
     fok_method = [
-        'act by edges', 'cue and target', 'cue', 'target', 'cue_act_over_all',
-        'outgoing edges', 'avg activation of everything', 'results looked through', 'step num'
+        'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
+        'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num'
     ]
     #'act by edges', 'total edges', 'cue and target', 'cue', 'target', , 'outgoing edges', avg_activation_of_everything, 'step_num_fok', 'results_looked_through_fok'
     store_time = 0
@@ -351,6 +361,7 @@ def test_model():
                 result = store.query(time, False, step.query_terms)
             elif step.action == 'retrieve':
                 result = store.retrieve(time, prev_result)
+                # FIXME we can reset the fok funtion here for any retrieve steps
             else:
                 print('invalid action: ' + step.action)
                 return
