@@ -4,7 +4,7 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
 
-doing_query = True
+# doing_query = True
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
@@ -21,7 +21,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
                     'topography': 'mountains',
                     'climate': 'tropical',
                     'name': 'Indonesia',
-                    'colonized by': 'Netherlands',
+                    'colonized by': 'the netherlands',
             }),
         Knowledge('indian ocean', {'type': 'ocean', 'name': 'Indian Ocean'}),
         Knowledge(
@@ -50,7 +50,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
         ),
         Knowledge('lava', {'type': 'molten rock', 'expelled from': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'formerly': 'magma', 'name': 'Lava', 'associated with': 'volcano'}),
         Knowledge('magma', {'type': 'molten rock', 'inside': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'name': 'Magma', 'associated with': 'volcano'}),
-        Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa'}),
+        Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa', 'setting for': '21 balloons'}),
         Knowledge('fire', {'consumes': 'grass', 'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
         Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
         Knowledge('yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}),
@@ -66,6 +66,8 @@ volcano_knowledge_list = [Knowledge('indonesia', {
         Knowledge('mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}),
         Knowledge('java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}),
         Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
+        Knowledge('the netherlands', {'type': 'country', 'located in': 'europe', 'name': 'The Netherlands', 'official language': 'dutch'}),
+        Knowledge('21 balloons', {'type': 'novel', 'written by': 'william pene du bois', 'title': 'The 21 Balloons', 'setting': 'krakatoa'}),
     ]
 TASKS = {
     'j_grid': Task(
@@ -123,6 +125,16 @@ TASKS = {
                 ],
                 activate_on_store=False,
             ),
+    'krakatoa_dutch': Task(
+                knowledge_list= volcano_knowledge_list,
+                retrieval_steps=[
+                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'node_id'), # krakatoa
+                    RetrievalStep('retrieve', {}, {}, 'located in'), # indonesia
+                    RetrievalStep('retrieve', {}, {}, 'colonized by'), # the netherlands
+                    RetrievalStep('retrieve', {}, {}, 'official language') # dutch!
+                ],
+                activate_on_store=False,
+            ),
     'j_oval_office': Task(
             knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
@@ -140,7 +152,7 @@ TASKS = {
             activate_on_store=False,
         ),
 
-'j_nathan_birth_year': Task(
+    'j_nathan_birth_year': Task(
             knowledge_list=[
             Knowledge('oval_office', {'is_a': 'room', 'located_in': 'the_white_house', 'first_word': 'oval', 'second_word': 'office', 'designed_by': 'nathan_c_wyeth', 'name': 'Oval Office'}),
             Knowledge('white_house', {'is_a': 'building', 'houses': 'president', 'has': 'room', 'famous_room': 'oval_office'}),
@@ -159,7 +171,7 @@ TASKS = {
             activate_on_store=False,
         ),
 
-'michigan_football_q': Task(
+    'michigan_football_q': Task(
             knowledge_list=[
             Knowledge('football', {'is_a': 'american_sport', 'best_d1_team': 'u_of_michigan'}),
             Knowledge('u_of_michigan', {'is_a': 'university', 'mascot_animal': 'wolverine'}),
@@ -173,7 +185,7 @@ TASKS = {
             activate_on_store=False,
         ),
 
-'china_flag_q': Task(
+    'china_flag_q': Task(
             knowledge_list=[
             Knowledge('great_wall_of_china', {'is_a': 'wall', 'notable_info': 'largest_man_made_structure', 'located_in': 'china'}),
             Knowledge('china', {'is_a': 'country', 'located_in': 'asia', 'flag_is': 'chinese_flag'}),
@@ -187,7 +199,7 @@ TASKS = {
             activate_on_store=False,
         ),
 
-'khmer_cambodia_q': Task(
+    'khmer_cambodia_q': Task(
             knowledge_list=[
             Knowledge('khmer', {'is_a': 'language', 'notable_info': 'largest_alphabet', 'official_language_of': 'cambodia'}),
             Knowledge('cambodia', {'is_a': 'country', 'national_flower': 'rumduol'}),
@@ -200,6 +212,21 @@ TASKS = {
         ],
             activate_on_store=False,
         ),
+    'olympics_washington': Task(
+                knowledge_list=[
+                Knowledge('2028 olympics', {'is_a': 'major international sporting event', 'year': '2028',
+                                            'hosted by': 'los angeles', 'is a': 'summer olympics'}),
+                Knowledge('los angeles', {'is_a': 'city', 'in country': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
+                Knowledge('usa', {'is_a': 'country', 'capital': 'washington dc'}),
+            ],
+                retrieval_steps=[
+                    RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'node_id'),
+                    RetrievalStep('retrieve', {}, {}, 'hosted by'), # los angeles
+                    RetrievalStep('retrieve', {}, {}, 'in country'),  # usa
+                    RetrievalStep('retrieve', {}, {}, 'capital') #dc
+            ],
+                activate_on_store=False,
+            ),
 }
 
 
@@ -257,6 +284,8 @@ def determine_fok_function(method):
         return target_fok
     elif method == 'cue and target':
         return cue_and_target_fok
+    elif method == 'straight_activation_fok':
+        return straight_activation_fok
     elif method == 'outgoing edges cue':
         return outgoing_edges_cue_fok
     elif method == 'outgoing edges target':
@@ -277,8 +306,14 @@ def determine_fok_function(method):
         return outgoing_edges_switch_fok
     elif method == 'act_by_edges_switch_fok':
         return act_by_edges_switch_fok
-    elif method == 'outgoing_edges_cue_results_looked_thru_target_fok':
+    elif method == 'cue_out_edge_and_step_num_fok':
         return cue_out_edge_and_step_num_fok
+
+# changes to return different node's activations depending on which pieces are available
+def straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
+    if len(terms) > 0:
+       return cue_fok(store, terms, result, query_time, results_looked_through, step_num)
+    return target_fok(store, terms, result, query_time, results_looked_through, step_num)
 
 
 
@@ -350,22 +385,19 @@ def step_num_fok(store, terms, result, query_time, results_looked_through, step_
     return step_num
 
 def outgoing_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
-    global doing_query
-    if doing_query:
+    if len(terms) > 0:
         return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
     else:
         return outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num)
 
 def act_by_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
-    global doing_query
-    if doing_query:
+    if len(terms) > 0:
         return act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num)
     else:
         return act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num)
 
 def cue_out_edge_and_step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
-    global doing_query
-    if doing_query:
+    if len(terms) > 0:
         return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
     else:
         return step_num_fok(store, terms, result, query_time, results_looked_through, step_num)
@@ -392,21 +424,22 @@ def test_model():
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
-    act_capped = [False, True]
-    backlinks = [False, True]
+    act_capped = [True]
+    backlinks = [True, False]
     fok_method = [
-        'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
-        'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
-        'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'outgoing_edges_cue_results_looked_thru_target_fok'
+        'straight_activation_fok'
     ]
-    # 'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target', 'step num',
-    # 'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through',
+    #  'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
+    #         'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
+    #         'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
+    #         'straight_activation_fok'
     # task_names = list(TASKS.keys())
-    task_names = [
-                  'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
-                  'j_indonesia_mountain', 'j_volcano_mountain',
-                  'j_marapi_to_volcano', 'j_oval_office', 'j_nathan_birth_year',
-                  'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q']
+    task_names = [ 'krakatoa_dutch'
+                  ]
+    # #'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
+    #               'j_indonesia_mountain', 'j_volcano_mountain',
+    #               'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
+    #               'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
 
     generator = product(
         act_decay_rate,
@@ -427,8 +460,8 @@ def test_model():
             # 'decay rate = ' + str(rate),
             # 'scale factor = ' + str(scale),
             # 'max steps = ' + str(step),
-            # 'capped = ' + str(cap),
-            # 'backlinks = ' + str(backlink),
+            'capped = ' + str(cap),
+            'backlinks = ' + str(backlink),
 
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
@@ -443,24 +476,23 @@ def test_model():
             print(step)
             # take the retrieval step
             if step.action == 'query':
-                global doing_query
-                doing_query = True
                 result = store.query(time, False, step.query_terms)
             elif step.action == 'retrieve':
-                doing_query = False
                 result = store.retrieve(time, prev_result)
-                # FIXME we could reset the fok funtion here for any retrieve steps
             else:
                 print('invalid action: ' + step.action)
                 return
             failed = result is None
             results_looked_through = 1
             time += 1
+
             while not failed:
+                name = result['node_id']
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
 
+                # krakatoa_dutch only passes this if when backlinks = false
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
                     prev_result = result[step.result_attr]
