@@ -1,9 +1,10 @@
 from itertools import product
 from collections import namedtuple
-from statistics import mean
 
 from research.rl_memory import ActivationClass, NetworkXKB
+from statistics import mean
 
+doing_query = True
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
@@ -158,7 +159,50 @@ TASKS = {
             activate_on_store=False,
         ),
 
+'michigan_football_q': Task(
+            knowledge_list=[
+            Knowledge('football', {'is_a': 'american_sport', 'best_d1_team': 'u_of_michigan'}),
+            Knowledge('u_of_michigan', {'is_a': 'university', 'mascot_animal': 'wolverine'}),
+            Knowledge('wolverine', {'is_a': 'mammal', 'michigan_mascot_name': 'willie'}),
+        ],
+            retrieval_steps=[
+                RetrievalStep('query', {'is_a': 'american_sport'}, {}, 'best_d1_team'),
+                RetrievalStep('retrieve', {}, {}, 'mascot_animal'),
+                RetrievalStep('retrieve', {}, {}, 'michigan_mascot_name')
+        ],
+            activate_on_store=False,
+        ),
+
+'china_flag_q': Task(
+            knowledge_list=[
+            Knowledge('great_wall_of_china', {'is_a': 'wall', 'notable_info': 'largest_man_made_structure', 'located_in': 'china'}),
+            Knowledge('china', {'is_a': 'country', 'located_in': 'asia', 'flag_is': 'chinese_flag'}),
+            Knowledge('chinese_flag', {'is_a': 'flag', 'main_color': 'red', 'secondary_color': 'yellow', 'has_shape': 'star'}),
+        ],
+            retrieval_steps=[
+                RetrievalStep('query', {'notable_info': 'largest_man_made_structure'}, {}, 'located_in'),
+                RetrievalStep('retrieve', {}, {}, 'flag_is'),
+                RetrievalStep('retrieve', {}, {}, 'main_color'),
+        ],
+            activate_on_store=False,
+        ),
+
+'khmer_cambodia_q': Task(
+            knowledge_list=[
+            Knowledge('khmer', {'is_a': 'language', 'notable_info': 'largest_alphabet', 'official_language_of': 'cambodia'}),
+            Knowledge('cambodia', {'is_a': 'country', 'national_flower': 'rumduol'}),
+            Knowledge('rumduol', {'smells': 'good', 'color': 'yellow'}),
+        ],
+            retrieval_steps=[
+                RetrievalStep('query', {'notable_info': 'largest_alphabet'}, {}, 'official_language_of'),
+                RetrievalStep('retrieve', {}, {}, 'national_flower'),
+                RetrievalStep('retrieve', {}, {}, 'color'),
+        ],
+            activate_on_store=False,
+        ),
 }
+
+
 
 
 def create_paired_recall_tasks():
@@ -229,6 +273,12 @@ def determine_fok_function(method):
         return results_looked_through_fok
     elif method == 'step num':
         return step_num_fok
+    elif method == 'outgoing_edges_switch_fok':
+        return outgoing_edges_switch_fok
+    elif method == 'act_by_edges_switch_fok':
+        return act_by_edges_switch_fok
+    elif method == 'outgoing_edges_cue_results_looked_thru_target_fok':
+        return cue_out_edge_and_step_num_fok
 
 
 
@@ -299,6 +349,30 @@ def results_looked_through_fok(store, terms, result, query_time, results_looked_
 def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
     return step_num
 
+def outgoing_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
+    global doing_query
+    if doing_query:
+        return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
+    else:
+        return outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num)
+
+def act_by_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
+    global doing_query
+    if doing_query:
+        return act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num)
+    else:
+        return act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num)
+
+def cue_out_edge_and_step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
+    global doing_query
+    if doing_query:
+        return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
+    else:
+        return step_num_fok(store, terms, result, query_time, results_looked_through, step_num)
+
+
+
+
 
 def contextualize_fok(historical_fok_list, pure_fok):
     # store pure fok in a list
@@ -322,14 +396,17 @@ def test_model():
     backlinks = [False, True]
     fok_method = [
         'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
-        'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num'
+        'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
+        'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'outgoing_edges_cue_results_looked_thru_target_fok'
     ]
     # 'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target', 'step num',
     # 'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through',
     # task_names = list(TASKS.keys())
-    task_names = ['j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
+    task_names = [
+                  'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
                   'j_indonesia_mountain', 'j_volcano_mountain',
-                  'j_marapi_to_volcano', 'j_oval_office', 'j_nathan_birth_year']
+                  'j_marapi_to_volcano', 'j_oval_office', 'j_nathan_birth_year',
+                  'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q']
 
     generator = product(
         act_decay_rate,
@@ -342,6 +419,7 @@ def test_model():
     )
 
     for rate, scale, step, cap, backlink, fok_method, task_name in generator:
+        step_history_list = []
         task = TASKS[task_name]
         print(', '.join([
             'task = ' + str(task_name),
@@ -361,17 +439,20 @@ def test_model():
 
         # loop through the retrieval steps
         for step_num, step in enumerate(task.retrieval_steps, start=1):
+            on_step_level = True
             print(step)
             # take the retrieval step
             if step.action == 'query':
+                global doing_query
+                doing_query = True
                 result = store.query(time, False, step.query_terms)
             elif step.action == 'retrieve':
+                doing_query = False
                 result = store.retrieve(time, prev_result)
                 # FIXME we could reset the fok funtion here for any retrieve steps
             else:
                 print('invalid action: ' + step.action)
                 return
-
             failed = result is None
             results_looked_through = 1
             time += 1
