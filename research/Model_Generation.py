@@ -1,3 +1,4 @@
+import math
 from itertools import product
 from collections import namedtuple
 
@@ -44,8 +45,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
                 'name': 'Volcano',
                 'similar to': 'mountain',
                 'can be called': 'fire mountain',
-                'famous example from antiquity': 'mt vesuvius',
-                'famous example from modernity': 'krakatoa',
+                'example': 'krakatoa'
             },
         ),
         Knowledge('lava', {'type': 'molten rock', 'expelled from': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'formerly': 'magma', 'name': 'Lava', 'associated with': 'volcano'}),
@@ -320,8 +320,11 @@ def straight_activation_fok(store, terms, result, query_time, results_looked_thr
 # terms is {attribute : node}, like {first : A}
 def cue_fok(store, terms, result, query_time, results_looked_through, step_num):
     # if the cue node is in the graph, proceed. (for the marapi cue this returns 0)
+    avg_act = avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num)
+    if avg_act == 0:
+        return 0
     return sum(
-        store.get_activation(cue, query_time, True)
+        math.log(store.get_activation(cue, query_time, True)/avg_act)
         for cue in terms.values() if store.graph.has_node(cue)
     )
 
@@ -329,14 +332,15 @@ def cue_fok(store, terms, result, query_time, results_looked_through, step_num):
 def target_fok(store, terms, result, query_time, results_looked_through, step_num):
     if result is None:
         return 0
-    return store.get_activation(result, query_time, True)
+    avg_act = avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num)
+    if avg_act == 0 or store.get_activation(result, query_time, True) == 0:
+        return 0
+    return math.log(store.get_activation(result, query_time, True)/avg_act)
 
 
 def cue_and_target_fok(store, terms, result, query_time, results_looked_through, step_num):
-    if result is None:
-        return 0
-    total = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
-    return total + store.get_activation(result, query_time, True)
+    return cue_fok(store, terms, result, query_time, results_looked_through, step_num) \
+           + target_fok(store, terms, result, query_time, results_looked_through, step_num)
 
 def cue_act_over_all(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
@@ -353,10 +357,13 @@ def cue_act_over_all(store, terms, result, query_time, results_looked_through, s
     )
 
 def outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return sum(len(store.graph.out_edges(cue)) for cue in terms.values())
+    avg_num_edges = store.graph.number_of_edges()/store.graph.number_of_nodes()
+    return sum(math.log((len(store.graph.out_edges(cue))/avg_num_edges))
+               for cue in terms.values() if len(store.graph.out_edges(cue)) != 0)
 
 def outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return len(store.graph.out_edges(result))
+    avg_num_edges = store.graph.number_of_edges()/store.graph.number_of_nodes()
+    return math.log((len(store.graph.out_edges(result))/avg_num_edges))
 
 def act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num):
     return sum(
@@ -427,15 +434,22 @@ def test_model():
     act_capped = [True]
     backlinks = [True, False]
     fok_method = [
-        'straight_activation_fok'
+        'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
+                 'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
+                'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
+            'straight_activation_fok'
     ]
     #  'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
     #         'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
     #         'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
     #         'straight_activation_fok'
     # task_names = list(TASKS.keys())
-    task_names = [ 'krakatoa_dutch'
+    task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
+                'j_indonesia_mountain', 'j_volcano_mountain',
+                   'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
+                   'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
                   ]
+
     # #'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
     #               'j_indonesia_mountain', 'j_volcano_mountain',
     #               'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
@@ -487,7 +501,7 @@ def test_model():
             time += 1
 
             while not failed:
-                name = result['node_id']
+                print(result['node_id'])
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
@@ -499,7 +513,7 @@ def test_model():
                     # and add this current pure fok to the history (?)
                     # (and this is the step level, I suppose, as this if is the gate to the next step)
                     informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
-                    print('informed/contextualized fok = ' + str(informed_fok))
+                    # print('informed/contextualized fok = ' + str(informed_fok))
                     break
                 elif store.has_next_result:
                     results_looked_through += 1
@@ -513,5 +527,6 @@ def test_model():
             if failed:
                 break
         print(prev_result)
+        print()
 
 test_model()
