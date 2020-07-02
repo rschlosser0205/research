@@ -214,14 +214,15 @@ TASKS = {
         ),
     'olympics_washington': Task(
                 knowledge_list=[
+                Knowledge('2028 euro cup', {'is_a': 'major international sporting event', 'year': '2028'}),
                 Knowledge('2028 olympics', {'is_a': 'major international sporting event', 'year': '2028',
-                                            'hosted by': 'los angeles', 'is a': 'summer olympics'}),
+                                            'host city': 'los angeles', 'is a': 'summer olympics'}),
                 Knowledge('los angeles', {'is_a': 'city', 'in country': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
                 Knowledge('usa', {'is_a': 'country', 'capital': 'washington dc'}),
             ],
                 retrieval_steps=[
                     RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'node_id'),
-                    RetrievalStep('retrieve', {}, {}, 'hosted by'), # los angeles
+                    RetrievalStep('retrieve', {}, {}, 'host city'), # los angeles
                     RetrievalStep('retrieve', {}, {}, 'in country'),  # usa
                     RetrievalStep('retrieve', {}, {}, 'capital') #dc
             ],
@@ -449,6 +450,7 @@ def test_model():
                    'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
                    'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
                   ]
+    task_names = ['olympics_washington']
 
     # #'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
     #               'j_indonesia_mountain', 'j_volcano_mountain',
@@ -506,15 +508,21 @@ def test_model():
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
 
-                # krakatoa_dutch only passes this if when backlinks = false
+
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
-                    prev_result = result[step.result_attr]
-                    # and add this current pure fok to the history (?)
-                    # (and this is the step level, I suppose, as this if is the gate to the next step)
-                    informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
-                    # print('informed/contextualized fok = ' + str(informed_fok))
-                    break
+                    if result.__contains__(step.result_attr):
+                        prev_result = result[step.result_attr]
+                        # and add this current pure fok to the history (?)
+                        # (and this is the step level, I suppose, as this if is the gate to the next step)
+                        informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
+                        # print('informed/contextualized fok = ' + str(informed_fok))
+                        break
+                    else:
+                        # curr result does not have the result_attr we were expecting. continue looping through results
+                        results_looked_through += 1
+                        # if there is a next result, move on to the next result
+                        result = store.next_result(time)
                 elif store.has_next_result:
                     results_looked_through += 1
                     # if there is a next result, move on to the next result
