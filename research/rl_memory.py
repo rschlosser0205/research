@@ -493,7 +493,7 @@ class NetworkXKB(KnowledgeStore):
             # edge does not exist, so create it
             self.graph.add_edge(mem_id, value, attribute=attribute)
             if backlinks:
-                self.graph.add_edge(value, mem_id, attribute='backlink_from_' + value + '_to_' + mem_id)
+                self.graph.add_edge(value, mem_id, attribute='backlink_from_' + attribute + '_to_' + mem_id)
             # FIXED what does inverted_index mean (a technique for speeding up search)
             # if value in self.graph:
             #     if attribute == self.graph.out_edges(mem_id, data=True)['attribute']:
@@ -530,7 +530,10 @@ class NetworkXKB(KnowledgeStore):
             candidate for candidate in candidates
             if all((
                 (candidate, value) in self.graph.edges
-                and self.graph.get_edge_data(candidate, value)[0]['attribute'] == attribute
+                and any(
+                    attributes['attribute'] == attribute
+                    for attributes in self.graph.get_edge_data(candidate, value).values()
+                   )
             ) for attribute, value in attr_vals.items())
         )
         # quit early if there are no results
