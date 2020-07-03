@@ -454,6 +454,8 @@ class NetworkXKB(KnowledgeStore):
         self.result_index = None
 
     def get_activation(self, mem_id, current_time, pre_query):
+        if not self.graph.__contains__(mem_id):
+            return 0
         # if pre_query, ignore all tuples with the most recent time stamp
         total_act = 0
         if len(self.graph.nodes[mem_id]['activation']) > 0:
@@ -517,6 +519,7 @@ class NetworkXKB(KnowledgeStore):
     def retrieve(self, time_stamp, mem_id): # noqa: D102
         if mem_id not in self.graph:
             return None
+        print('retrieve, activate, and return ' + mem_id)
         return self._activate_and_return(time_stamp, mem_id)
 
     def query(self, time_stamp, pre_query, attr_vals):  # noqa: D102

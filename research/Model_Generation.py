@@ -297,110 +297,81 @@ create_paired_recall_tasks()
 
 
 def determine_fok_function(method):
-    if method == 'cue':
-        return cue_fok
-    elif method == 'target':
-        return target_fok
-    elif method == 'cue and target':
+    if method == 'cue_and_target':
         return cue_and_target_fok
     elif method == 'straight_activation_fok':
         return straight_activation_fok
-    elif method == 'outgoing edges cue':
-        return outgoing_edges_cue_fok
-    elif method == 'outgoing edges target':
-        return outgoing_edges_target_fok
-    elif method == 'cue_act_over_all':
-        return cue_act_over_all
-    elif method == 'act by edges cue':
-        return act_by_edges_cue
-    elif method == 'act_by_edges_target':
-        return act_by_edges_target
-    elif method == 'avg activation of everything':
-        return avg_activation_of_everything
-    elif method == 'results looked through':
+    elif method == 'act_over_avg_fok':
+        return act_over_all_fok
+    elif method == 'results_looked_through':
         return results_looked_through_fok
-    elif method == 'step num':
+    elif method == 'step_num':
         return step_num_fok
-    elif method == 'outgoing_edges_switch_fok':
-        return outgoing_edges_switch_fok
-    elif method == 'act_by_edges_switch_fok':
-        return act_by_edges_switch_fok
-    elif method == 'cue_out_edge_and_step_num_fok':
-        return cue_out_edge_and_step_num_fok
-
-# changes to return different node's activations depending on which pieces are available
-def straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
-    if len(terms) > 0:
-       return cue_fok(store, terms, result, query_time, results_looked_through, step_num)
-    return target_fok(store, terms, result, query_time, results_looked_through, step_num)
+    elif method == 'outgoing_edges_fok':
+        return outgoing_edges_fok
+    elif method == 'act_over_edges_fok_1':
+        return act_over_edges_fok_1
+    elif method == 'act_over_edges_fok_2':
+        return act_over_edges_fok_2
 
 
-
-# terms is {attribute : node}, like {first : A}
-def cue_fok(store, terms, result, query_time, results_looked_through, step_num):
-    # if the cue node is in the graph, proceed. (for the marapi cue this returns 0)
-    avg_act = avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num)
-    if avg_act == 0:
-        return 0
-    return sum(
-        math.log(store.get_activation(cue, query_time, True)/avg_act)
-        for cue in terms.values() if store.graph.has_node(cue)
-    )
-
-
-def target_fok(store, terms, result, query_time, results_looked_through, step_num):
-    if result is None:
-        return 0
-    avg_act = avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num)
-    if avg_act == 0 or store.get_activation(result, query_time, True) == 0:
-        return 0
-    return math.log(store.get_activation(result, query_time, True)/avg_act)
-
-
-def cue_and_target_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return cue_fok(store, terms, result, query_time, results_looked_through, step_num) \
-           + target_fok(store, terms, result, query_time, results_looked_through, step_num)
-
-def cue_act_over_all(store, terms, result, query_time, results_looked_through, step_num):
+# helper functions to support more complicated fok methods
+def avg_activation_of_everything(store, query_time):
     all_nodes = list(store.graph.nodes)
-    total_act = sum(
+    return sum(
+        # FIXME should we keep this as True and ignore the most recent activation event?
         store.get_activation(node, query_time, True)
         for node in all_nodes
-    )
-    if total_act == 0:
-        return 0
-    return sum(
-        store.get_activation(cue, query_time, True)
-        / total_act
-        for cue in terms.values()
-    )
+    ) / len(all_nodes)
 
-def outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num):
+def outgoing_edges_of_cue(store, terms, result, query_time, results_looked_through, step_num):
     avg_num_edges = store.graph.number_of_edges()/store.graph.number_of_nodes()
     return sum(math.log((len(store.graph.out_edges(cue))/avg_num_edges))
                for cue in terms.values() if len(store.graph.out_edges(cue)) != 0)
 
-def outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num):
+def outgoing_edges_of_target(store, terms, result, query_time, results_looked_through, step_num):
     avg_num_edges = store.graph.number_of_edges()/store.graph.number_of_nodes()
     return math.log((len(store.graph.out_edges(result))/avg_num_edges))
 
-def act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num):
+def cue_activation(store, terms, query_time):
+    # if the cue node is in the graph, proceed. (for the marapi cue this returns 0)
+    avg_act = avg_activation_of_everything(store, query_time)
+    if avg_act == 0:
+        return 0
     return sum(
-        (
-            (len(store.graph.out_edges(cue))* store.get_activation(cue, query_time, True)
-        )
-        for cue in terms.values() if store.graph.has_node(cue)
-    ))
+        math.log(store.get_activation(cue, query_time, True)/avg_act) for cue in terms.values()
+    )
 
-def act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num):
-    return len(store.graph.out_edges(result))* store.get_activation(result, query_time, True)
+def target_activation(store, result, query_time):
+    if result is None:
+        return 0
+    avg_act = avg_activation_of_everything(store, query_time)
+    if avg_act == 0 or store.get_activation(result, query_time, False) == 0:
+        return 0
+    return math.log(store.get_activation(result, query_time, False)/avg_act)
 
-def avg_activation_of_everything(store, terms, result, query_time, results_looked_through, step_num):
+
+
+
+
+
+# actual fok methods
+
+def straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
+    if len(terms) > 0:
+       return cue_activation(store, terms, query_time)
+    return target_activation(store, result, query_time)
+
+# returns the current node's activation as a share of total activation of all nodes in the network
+def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
-    return sum(
-        store.get_activation(node, query_time, True)
-        for node in all_nodes
-    ) / len(all_nodes)
+    total_act = sum(
+        store.get_activation(node, query_time, True) for node in all_nodes
+    )
+    if total_act == 0:
+        return 0
+    return straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num)/ total_act
+
 
 def results_looked_through_fok(store, terms, result, query_time, results_looked_through, step_num):
     if results_looked_through != 0:
@@ -410,24 +381,29 @@ def results_looked_through_fok(store, terms, result, query_time, results_looked_
 def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
     return step_num
 
-def outgoing_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
+def outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-        return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
+        return outgoing_edges_of_cue(store, terms, result, query_time, results_looked_through, step_num)
     else:
-        return outgoing_edges_target_fok(store, terms, result, query_time, results_looked_through, step_num)
+        return outgoing_edges_of_target(store, terms, result, query_time, results_looked_through, step_num)
 
-def act_by_edges_switch_fok(store, terms, result, query_time, results_looked_through, step_num):
+def act_over_edges_fok_1(store, terms, result, query_time, results_looked_through, step_num):
+    return straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num) \
+           / outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
+
+def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-        return act_by_edges_cue(store, terms, result, query_time, results_looked_through, step_num)
+        curr_activation = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
+        curr_edges = sum(store.graph.out_edges(cue) for cue in terms.values())
     else:
-        return act_by_edges_target(store, terms, result, query_time, results_looked_through, step_num)
-
-def cue_out_edge_and_step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
-    if len(terms) > 0:
-        return outgoing_edges_cue_fok(store, terms, result, query_time, results_looked_through, step_num)
-    else:
-        return step_num_fok(store, terms, result, query_time, results_looked_through, step_num)
-
+        curr_activation = store.get_activation(result, query_time, False)
+        curr_edges = store.graph.out_edges(result)
+    avg_num_edges = store.graph.number_of_edges() / store.graph.number_of_nodes()
+    activation_ratio = curr_activation/avg_activation_of_everything(store, query_time)
+    edges_ratio = curr_edges/avg_num_edges
+    return math.log(
+        activation_ratio/edges_ratio
+    )
 
 
 
@@ -453,32 +429,29 @@ def test_model():
     act_capped = [True]
     backlinks = [True, False]
     fok_method = [
-        'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
-                 'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
-                'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
-            'straight_activation_fok'
+        'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num',
+        'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2'
     ]
-
+    # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
     # task_names = list(TASKS.keys())
     task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
                 'j_indonesia_mountain', 'j_volcano_mountain',
                    'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
                    'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
                   ]
-    task_names = ['olympics_washington', 'michigan_football_q']
 
     generator = product(
+        task_names,
         act_decay_rate,
         act_scale_factor,
         act_max_steps,
         act_capped,
         backlinks,
         fok_method,
-        task_names,
+
     )
 
-    for rate, scale, step, cap, backlink, fok_method, task_name in generator:
-        step_history_list = []
+    for task_name, rate, scale, step, cap, backlink, fok_method, in generator:
         task = TASKS[task_name]
         print(', '.join([
             'task = ' + str(task_name),
@@ -500,7 +473,6 @@ def test_model():
 
         # loop through the retrieval steps
         for step_num, step in enumerate(task.retrieval_steps, start=1):
-            on_step_level = True
             print(step)
             # take the retrieval step
             if step.action == 'query':
