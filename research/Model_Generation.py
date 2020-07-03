@@ -6,7 +6,7 @@ from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
 
 # doing_query = True
-Task = namedtuple('Task', 'knowledge_list, retrieval_steps, activate_on_store')
+Task = namedtuple('Task', 'knowledge_list, retrieval_steps, question_concepts, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
 volcano_knowledge_list = [Knowledge('indonesia', {
@@ -66,7 +66,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
         Knowledge('mahakam', {'type': 'river', 'located in': 'indonesia', 'name': 'Mahakam', 'flows to': 'makassar strait'}),
         Knowledge('java', {'type': 'island', 'located in': 'indonesia', 'name': 'Java'}),
         Knowledge('sumatra', {'type': 'island', 'located in': 'indonesia', 'name': 'Sumatra'}),
-        Knowledge('the netherlands', {'type': 'country', 'located in': 'europe', 'name': 'The Netherlands', 'official language': 'dutch'}),
+        Knowledge('the netherlands', {'type': 'nation', 'located in': 'europe', 'name': 'The Netherlands', 'official language': 'dutch'}),
         Knowledge('21 balloons', {'type': 'novel', 'written by': 'william pene du bois', 'title': 'The 21 Balloons', 'setting': 'krakatoa'}),
     ]
 TASKS = {
@@ -85,7 +85,8 @@ TASKS = {
         retrieval_steps=[
             RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
         ],
-        activate_on_store=False,
+        question_concepts=['city', '4', 'plan_showing_streets'],
+        activate_on_store=False
     ),
 
     'j_volcano_to_marapi': Task(
@@ -94,21 +95,24 @@ TASKS = {
             RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
 
         ],
-        activate_on_store=False,
+        question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+        activate_on_store=False
     ),
     'j_volcano_fire': Task(
             knowledge_list=volcano_knowledge_list,
             retrieval_steps=[
                 RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')
             ],
-            activate_on_store=False,
+            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+            activate_on_store=False
         ),
     'j_indonesia_mountain': Task(
             knowledge_list= volcano_knowledge_list,
             retrieval_steps=[
                 RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
             ],
-            activate_on_store=False,
+            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+            activate_on_store=False
         ),
     'j_volcano_mountain': Task(
             knowledge_list= volcano_knowledge_list,
@@ -116,14 +120,16 @@ TASKS = {
                 # free associate on mountain (may return hill)
                 RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
             ],
-            activate_on_store=False,
+            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+            activate_on_store=False
         ),
     'j_marapi_to_volcano': Task(
                 knowledge_list= volcano_knowledge_list,
                 retrieval_steps=[
                     RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),
                 ],
-                activate_on_store=False,
+                question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+                activate_on_store=False
             ),
     'krakatoa_dutch': Task(
                 knowledge_list= volcano_knowledge_list,
@@ -133,7 +139,8 @@ TASKS = {
                     RetrievalStep('retrieve', {}, {}, 'colonized by'), # the netherlands
                     RetrievalStep('retrieve', {}, {}, 'official language') # dutch!
                 ],
-                activate_on_store=False,
+                question_concepts=['official language', 'europe', 'nation', 'volcano', 'islands', '2020', '21 balloons', 'william pene du bois'],
+                activate_on_store=False
             ),
     'j_oval_office': Task(
             knowledge_list=[
@@ -149,7 +156,8 @@ TASKS = {
             retrieval_steps=[
                 RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
         ],
-            activate_on_store=False,
+            question_concepts=['shape', 'room', 'nathan_c_wyeth', 'william_taft', '1909'],
+            activate_on_store=False
         ),
 
     'j_nathan_birth_year': Task(
@@ -168,21 +176,24 @@ TASKS = {
                 RetrievalStep('retrieve', {}, {}, 'designed_by'),
                 RetrievalStep('retrieve', {}, {}, 'year_born')
         ],
-            activate_on_store=False,
+            question_concepts=['year_born', 'architect', 'shape', 'room', 'the_white_house', '1909'],
+            activate_on_store=False
         ),
 
     'michigan_football_q': Task(
             knowledge_list=[
             Knowledge('football', {'is_a': 'american_sport', 'best_d1_team': 'u_of_michigan'}),
-            Knowledge('u_of_michigan', {'is_a': 'university', 'mascot_animal': 'wolverine'}),
-            Knowledge('wolverine', {'is_a': 'mammal', 'michigan_mascot_name': 'willie'}),
+            Knowledge('best_d1_team', {'means': 'most_wins'}),
+            Knowledge('u_of_michigan', {'is_a': 'university', 'mascot_name': 'willy'}),
+            Knowledge('willy', {'animal_type': 'wolverine', 'is_a': 'name'}),
         ],
             retrieval_steps=[
                 RetrievalStep('query', {'is_a': 'american_sport'}, {}, 'best_d1_team'),
-                RetrievalStep('retrieve', {}, {}, 'mascot_animal'),
-                RetrievalStep('retrieve', {}, {}, 'michigan_mascot_name')
+                RetrievalStep('retrieve', {}, {}, 'mascot_name'),
+                RetrievalStep('retrieve', {}, {}, 'animal_type')
         ],
-            activate_on_store=False,
+            question_concepts=['name', 'mascot', 'university', 'most_wins', 'american_sport'],
+            activate_on_store=False
         ),
 
     'china_flag_q': Task(
@@ -190,13 +201,17 @@ TASKS = {
             Knowledge('great_wall_of_china', {'is_a': 'wall', 'notable_info': 'largest_man_made_structure', 'located_in': 'china'}),
             Knowledge('china', {'is_a': 'country', 'located_in': 'asia', 'flag_is': 'chinese_flag'}),
             Knowledge('chinese_flag', {'is_a': 'flag', 'main_color': 'red', 'secondary_color': 'yellow', 'has_shape': 'star'}),
+            Knowledge('red', {'is_a': 'color'}),
+            Knowledge('yellow', {'is_a': 'color'})
+
         ],
             retrieval_steps=[
                 RetrievalStep('query', {'notable_info': 'largest_man_made_structure'}, {}, 'located_in'),
                 RetrievalStep('retrieve', {}, {}, 'flag_is'),
                 RetrievalStep('retrieve', {}, {}, 'main_color'),
         ],
-            activate_on_store=False,
+            question_concepts=['color', 'flag', 'country', 'largest_man_made_structure'],
+            activate_on_store=False
         ),
 
     'khmer_cambodia_q': Task(
@@ -210,23 +225,25 @@ TASKS = {
                 RetrievalStep('retrieve', {}, {}, 'national_flower'),
                 RetrievalStep('retrieve', {}, {}, 'color'),
         ],
-            activate_on_store=False,
+            question_concepts=['color', 'national_flower', 'country', 'language', 'largest_alphabet'],
+            activate_on_store=False
         ),
     'olympics_washington': Task(
                 knowledge_list=[
                 Knowledge('2028 euro cup', {'is_a': 'major international sporting event', 'year': '2028'}),
                 Knowledge('2028 olympics', {'is_a': 'major international sporting event', 'year': '2028',
                                             'host city': 'los angeles', 'is a': 'summer olympics'}),
-                Knowledge('los angeles', {'is_a': 'city', 'in country': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
-                Knowledge('usa', {'is_a': 'country', 'capital': 'washington dc'}),
+                Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
+                Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
             ],
                 retrieval_steps=[
                     RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'node_id'),
                     RetrievalStep('retrieve', {}, {}, 'host city'), # los angeles
-                    RetrievalStep('retrieve', {}, {}, 'in country'),  # usa
+                    RetrievalStep('retrieve', {}, {}, 'in nation'),  # usa
                     RetrievalStep('retrieve', {}, {}, 'capital') #dc
             ],
-                activate_on_store=False,
+                question_concepts=['capital', 'nation', 'major international sporting event', '2028'],
+                activate_on_store=False
             ),
 }
 
@@ -271,7 +288,8 @@ def create_paired_recall_tasks():
         globals()['TASKS'][variable_name] = Task(
             knowledge_list=knowledge_list,
             retrieval_steps=retrieval_steps,
-            activate_on_store=True,
+            question_concepts=['A'],
+            activate_on_store=True
         )
 
 
@@ -440,22 +458,14 @@ def test_model():
                 'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
             'straight_activation_fok'
     ]
-    #  'act by edges cue', 'cue and target', 'cue', 'target', 'cue_act_over_all', 'act_by_edges_target',
-    #         'outgoing edges cue', 'outgoing edges target', 'avg activation of everything', 'results looked through', 'step num',
-    #         'outgoing_edges_switch_fok', 'act_by_edges_switch_fok', 'cue_out_edge_and_step_num_fok',
-    #         'straight_activation_fok'
+
     # task_names = list(TASKS.keys())
     task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
                 'j_indonesia_mountain', 'j_volcano_mountain',
                    'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
                    'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
                   ]
-    task_names = ['olympics_washington']
-
-    # #'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
-    #               'j_indonesia_mountain', 'j_volcano_mountain',
-    #               'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
-    #               'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
+    task_names = ['olympics_washington', 'michigan_football_q']
 
     generator = product(
         act_decay_rate,
@@ -482,6 +492,8 @@ def test_model():
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
+        for concept in task.question_concepts: #familiarizing self with question concepts
+            store.retrieve(time, concept)
         fok_function = determine_fok_function(fok_method)
         prev_fok = []
         prev_result = None
