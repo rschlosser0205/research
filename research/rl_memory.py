@@ -519,7 +519,6 @@ class NetworkXKB(KnowledgeStore):
     def retrieve(self, time_stamp, mem_id): # noqa: D102
         if mem_id not in self.graph:
             return None
-        print('retrieve, activate, and return ' + mem_id)
         return self._activate_and_return(time_stamp, mem_id)
 
     def query(self, time_stamp, pre_query, attr_vals):  # noqa: D102

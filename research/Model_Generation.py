@@ -45,18 +45,17 @@ volcano_knowledge_list = [Knowledge('indonesia', {
                 'name': 'Volcano',
                 'similar to': 'mountain',
                 'can be called': 'fire mountain',
-                'example': 'krakatoa'
             },
         ),
         Knowledge('lava', {'type': 'molten rock', 'expelled from': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'formerly': 'magma', 'name': 'Lava', 'associated with': 'volcano'}),
         Knowledge('magma', {'type': 'molten rock', 'inside': 'volcano', 'gives off': 'heat', 'related to': 'fire', 'name': 'Magma', 'associated with': 'volcano'}),
-        Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa', 'setting for': '21 balloons'}),
         Knowledge('fire', {'consumes': 'grass', 'type': 'chemical reaction', 'related to': 'heat', 'results in': 'ash', 'name': 'Fire'}),
         Knowledge('jakarta', {'type': 'city', 'capital of': 'indonesia', 'located in': 'indonesia', 'population': '9.6 million', 'name': 'Jakarta'}),
         Knowledge('yamin', {'type': 'mountain', 'located in': 'indonesia', 'height': '4540 m', 'name': 'Yamin'}),
         Knowledge('pangrango', {'type': 'volcano', 'located in': 'indonesia', 'status': 'dormant', 'name': 'Pangrango', 'is a': 'mountain'}),
         Knowledge('tujuh', {'type': 'volcano', 'located in': 'indonesia', 'is a': 'mountain', 'name': 'Tujuh'}),
         Knowledge('kelimutu', {'type': 'volcano', 'located in': 'indonesia', 'name': 'Kelimutu', 'last eruption': '1968', 'is a': 'mountain'}),
+        Knowledge('krakatoa', {'type': 'volcano', 'located in': 'indonesia', 'last eruption': '2020', 'is a': 'mountain', 'name': 'Krakatoa', 'setting for': '21 balloons'}),
         Knowledge('kapalatmada', {'type': 'mountain', 'located in': 'indonesia', 'name': 'Kapalatmada', 'height': '2428m'}),
         Knowledge('sentani', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Sentani'}),
         Knowledge('toba', {'type': 'lake', 'located in': 'indonesia', 'name': 'Lake Toba'}),
@@ -297,11 +296,9 @@ create_paired_recall_tasks()
 
 
 def determine_fok_function(method):
-    if method == 'cue_and_target':
-        return cue_and_target_fok
-    elif method == 'straight_activation_fok':
+    if method == 'straight_activation_fok':
         return straight_activation_fok
-    elif method == 'act_over_avg_fok':
+    elif method == 'act_over_all_fok':
         return act_over_all_fok
     elif method == 'results_looked_through':
         return results_looked_through_fok
@@ -313,6 +310,12 @@ def determine_fok_function(method):
         return act_over_edges_fok_1
     elif method == 'act_over_edges_fok_2':
         return act_over_edges_fok_2
+    elif method == 'num_results_fok':
+        return num_results_fok
+    elif method == 'competition_fok_1':
+        return competition_fok_1
+    elif method == 'competition_fok_2':
+        return competition_fok_2
 
 
 # helper functions to support more complicated fok methods
@@ -387,23 +390,51 @@ def outgoing_edges_fok(store, terms, result, query_time, results_looked_through,
     else:
         return outgoing_edges_of_target(store, terms, result, query_time, results_looked_through, step_num)
 
+# logs first
 def act_over_edges_fok_1(store, terms, result, query_time, results_looked_through, step_num):
+    relative_edges = outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
+    if relative_edges == 0:
+        return 0
     return straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num) \
-           / outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
+        /  relative_edges
 
+#
 def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
         curr_activation = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
-        curr_edges = sum(store.graph.out_edges(cue) for cue in terms.values())
+        curr_edges = sum(len(store.graph.out_edges(cue)) for cue in terms.values())
     else:
         curr_activation = store.get_activation(result, query_time, False)
-        curr_edges = store.graph.out_edges(result)
+        curr_edges = len(store.graph.out_edges(result))
     avg_num_edges = store.graph.number_of_edges() / store.graph.number_of_nodes()
+    if avg_activation_of_everything(store, query_time) == 0:
+        return 0
     activation_ratio = curr_activation/avg_activation_of_everything(store, query_time)
     edges_ratio = curr_edges/avg_num_edges
     return math.log(
         activation_ratio/edges_ratio
     )
+
+# returns 1/ the relative edges measurement defined above
+def competition_fok_1(store, terms, result, query_time, results_looked_through, step_num):
+    edges = outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
+    if edges == 0:
+        return 0
+    return 1/edges
+
+# returns 1/ the raw number of edges
+def competition_fok_2(store, terms, result, query_time, results_looked_through, step_num):
+    if len(terms) > 0:
+        edges = (sum((len(store.graph.out_edges(cue)))
+                   for cue in terms.values() if len(store.graph.out_edges(cue)) != 0))
+    edges =  1/ (len(store.graph.out_edges(result)))
+    if edges == 0:
+        return 0
+    else:
+        return 1/edges
+
+def num_results_fok(store, terms, result, query_time, results_looked_through, step_num):
+    return len(store.query_results)
 
 
 
@@ -429,8 +460,9 @@ def test_model():
     act_capped = [True]
     backlinks = [True, False]
     fok_method = [
-        'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num',
-        'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2'
+        'straight_activation_fok', 'act_over_all_fok', 'results_looked_through', 'step_num',
+        'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
+        'competition_fok_2'
     ]
     # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
     # task_names = list(TASKS.keys())
@@ -473,7 +505,7 @@ def test_model():
 
         # loop through the retrieval steps
         for step_num, step in enumerate(task.retrieval_steps, start=1):
-            print(step)
+            # print(step)
             # take the retrieval step
             if step.action == 'query':
                 result = store.query(time, False, step.query_terms)
