@@ -5,7 +5,13 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
 
-# doing_query = True
+import plotly.graph_objects as go
+
+task_list = []
+fok_method_list = []
+result_list = []
+fok_list = []
+step_list = []
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, question_concepts, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
@@ -452,8 +458,15 @@ def populate(store, link, store_time, activate_on_store, knowledge_list):
         store_time += 1
     return store_time
 
+def create_table(headers, column_values):
+    fig = go.Figure(data=[go.Table(header=dict(values=headers),
+                                   cells=dict(values=column_values))
+                          ])
+    fig.show()
+
 
 def test_model():
+    global task_list, fok_method_list, step_list, fok_list, result_list
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
@@ -495,6 +508,8 @@ def test_model():
             'backlinks = ' + str(backlink),
 
         ]))
+        fok_method_list.append(fok_method)  # FOK METHOD TO TABLE
+        task_list.append(str(task_name))  # TASK TO TABLE
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
         for concept in task.question_concepts: # familiarizing self with question concepts
@@ -521,10 +536,16 @@ def test_model():
             while not failed:
                 # print(str(result['node_id']) + ' '+ str(store.get_activation(result['node_id'], time, False)))
 
+                fok_method_list.append('')
+                task_list.append('')
+                result_list.append(result['node_id'])  # RESULT TO TABLE
+
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
                 print(result['node_id'])
+                fok_list.append(pure_fok)  # FOK TO TABLE
+                step_list.append(str(step_num))  # STEP TO TABLE
 
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
@@ -552,6 +573,11 @@ def test_model():
             if failed:
                 break
         print(prev_result)
+        result_list.append(prev_result)
+        fok_list.append('')
+        step_list.append('')
         print()
 
 test_model()
+create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
+
