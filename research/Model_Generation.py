@@ -133,8 +133,7 @@ TASKS = {
     'krakatoa_dutch': Task(
                 knowledge_list= volcano_knowledge_list,
                 retrieval_steps=[
-                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'node_id'), # krakatoa
-                    RetrievalStep('retrieve', {}, {}, 'located in'), # indonesia
+                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'located_in'), # krakatoa --> indonesia
                     RetrievalStep('retrieve', {}, {}, 'colonized by'), # the netherlands
                     RetrievalStep('retrieve', {}, {}, 'official language') # dutch!
                 ],
@@ -171,8 +170,7 @@ TASKS = {
             Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
             retrieval_steps=[
-                RetrievalStep('query', {'is_a': 'room'}, {'located_in': 'the_white_house'}, 'node_id'),
-                RetrievalStep('retrieve', {}, {}, 'designed_by'),
+                RetrievalStep('query', {'is_a': 'room'}, {'located_in': 'the_white_house'}, 'designed_by'),
                 RetrievalStep('retrieve', {}, {}, 'year_born')
         ],
             question_concepts=['year_born', 'architect', 'shape', 'room', 'the_white_house', '1909'],
@@ -236,8 +234,7 @@ TASKS = {
                 Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
             ],
                 retrieval_steps=[
-                    RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'node_id'),
-                    RetrievalStep('retrieve', {}, {}, 'host city'), # los angeles
+                    RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'host city'), # los angeles
                     RetrievalStep('retrieve', {}, {}, 'in nation'),  # usa
                     RetrievalStep('retrieve', {}, {}, 'capital') #dc
             ],
@@ -323,7 +320,7 @@ def avg_activation_of_everything(store, query_time):
     all_nodes = list(store.graph.nodes)
     return sum(
         # FIXME should we keep this as True and ignore the most recent activation event?
-        store.get_activation(node, query_time, True)
+        store.get_activation(node, query_time, False)
         for node in all_nodes
     ) / len(all_nodes)
 
@@ -342,7 +339,7 @@ def cue_activation(store, terms, query_time):
     if avg_act == 0:
         return 0
     return sum(
-        math.log(store.get_activation(cue, query_time, True)/avg_act) for cue in terms.values()
+        math.log(store.get_activation(cue, query_time, False)/avg_act) for cue in terms.values()
     )
 
 def target_activation(store, result, query_time):
@@ -369,7 +366,7 @@ def straight_activation_fok(store, terms, result, query_time, results_looked_thr
 def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
     total_act = sum(
-        store.get_activation(node, query_time, True) for node in all_nodes
+        store.get_activation(node, query_time, False) for node in all_nodes
     )
     if total_act == 0:
         return 0
@@ -401,7 +398,7 @@ def act_over_edges_fok_1(store, terms, result, query_time, results_looked_throug
 #
 def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-        curr_activation = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
+        curr_activation = sum(store.get_activation(cue, query_time, False) for cue in terms.values())
         curr_edges = sum(len(store.graph.out_edges(cue)) for cue in terms.values())
     else:
         curr_activation = store.get_activation(result, query_time, False)
@@ -410,6 +407,8 @@ def act_over_edges_fok_2(store, terms, result, query_time, results_looked_throug
     if avg_activation_of_everything(store, query_time) == 0:
         return 0
     activation_ratio = curr_activation/avg_activation_of_everything(store, query_time)
+    if curr_edges == 0 or avg_num_edges == 0:
+        return 0
     edges_ratio = curr_edges/avg_num_edges
     return math.log(
         activation_ratio/edges_ratio
@@ -426,8 +425,9 @@ def competition_fok_1(store, terms, result, query_time, results_looked_through, 
 def competition_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
         edges = (sum((len(store.graph.out_edges(cue)))
-                   for cue in terms.values() if len(store.graph.out_edges(cue)) != 0))
-    edges =  1/ (len(store.graph.out_edges(result)))
+                   for cue in terms.values()))
+    else:
+        edges = (len(store.graph.out_edges(result)))
     if edges == 0:
         return 0
     else:
@@ -435,7 +435,7 @@ def competition_fok_2(store, terms, result, query_time, results_looked_through, 
 
 def num_results_fok(store, terms, result, query_time, results_looked_through, step_num):
     return len(store.query_results)
-
+    # FIXME is the same the whole time
 
 
 
@@ -497,7 +497,7 @@ def test_model():
         ]))
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
-        for concept in task.question_concepts: #familiarizing self with question concepts
+        for concept in task.question_concepts: # familiarizing self with question concepts
             store.retrieve(time, concept)
         fok_function = determine_fok_function(fok_method)
         prev_fok = []
@@ -519,11 +519,12 @@ def test_model():
             time += 1
 
             while not failed:
-                print(result['node_id'])
+                # print(str(result['node_id']) + ' '+ str(store.get_activation(result['node_id'], time, False)))
+
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
-
+                print(result['node_id'])
 
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
