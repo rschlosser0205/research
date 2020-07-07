@@ -43,7 +43,7 @@ volcano_knowledge_list = [Knowledge('indonesia', {
         Knowledge('hill', {'type': 'landform', 'similar to': 'mountain', 'smaller than': 'mountain', 'name': 'Hill', 'covered_in': 'grass'}),
         Knowledge(
             'volcano', {
-                'type': 'leak',
+                'type': 'landform',
                 'comes from': 'tectonic plates',
                 'produces': 'heat',
                 'expels': 'lava',
@@ -97,8 +97,8 @@ TASKS = {
     'j_volcano_to_marapi': Task(
         knowledge_list=volcano_knowledge_list,
         retrieval_steps=[
-            RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'),
-
+            RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'), # returns null (so try again!)
+            RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
         ],
         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
         activate_on_store=False
@@ -131,15 +131,28 @@ TASKS = {
     'j_marapi_to_volcano': Task(
                 knowledge_list= volcano_knowledge_list,
                 retrieval_steps=[
-                    RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),
+                    RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'), # returns null, so try something different
+                    RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
                 ],
                 question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
                 activate_on_store=False
             ),
+    'j_volcano_strategy_switch': Task(
+            knowledge_list= volcano_knowledge_list,
+            retrieval_steps=[
+                # free associate on fire
+                RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
+                # free associate on mountain (should not return hill bc lava was just queried activated)
+                RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
+            ],
+            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+            activate_on_store=False
+        ),
+
     'krakatoa_dutch': Task(
                 knowledge_list= volcano_knowledge_list,
                 retrieval_steps=[
-                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'located_in'), # krakatoa --> indonesia
+                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'located in'), # krakatoa --> indonesia
                     RetrievalStep('retrieve', {}, {}, 'colonized by'), # the netherlands
                     RetrievalStep('retrieve', {}, {}, 'official language') # dutch!
                 ],
@@ -325,8 +338,7 @@ def determine_fok_function(method):
 def avg_activation_of_everything(store, query_time):
     all_nodes = list(store.graph.nodes)
     return sum(
-        # FIXME should we keep this as True and ignore the most recent activation event?
-        store.get_activation(node, query_time, False)
+        store.get_activation(node, query_time, True)
         for node in all_nodes
     ) / len(all_nodes)
 
@@ -345,16 +357,16 @@ def cue_activation(store, terms, query_time):
     if avg_act == 0:
         return 0
     return sum(
-        math.log(store.get_activation(cue, query_time, False)/avg_act) for cue in terms.values()
+        math.log(store.get_activation(cue, query_time, True)/avg_act) for cue in terms.values()
     )
 
 def target_activation(store, result, query_time):
     if result is None:
         return 0
     avg_act = avg_activation_of_everything(store, query_time)
-    if avg_act == 0 or store.get_activation(result, query_time, False) == 0:
+    if avg_act == 0 or store.get_activation(result, query_time, True) == 0:
         return 0
-    return math.log(store.get_activation(result, query_time, False)/avg_act)
+    return math.log(store.get_activation(result, query_time, True)/avg_act)
 
 
 
@@ -372,7 +384,7 @@ def straight_activation_fok(store, terms, result, query_time, results_looked_thr
 def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):
     all_nodes = list(store.graph.nodes)
     total_act = sum(
-        store.get_activation(node, query_time, False) for node in all_nodes
+        store.get_activation(node, query_time, True) for node in all_nodes
     )
     if total_act == 0:
         return 0
@@ -404,10 +416,10 @@ def act_over_edges_fok_1(store, terms, result, query_time, results_looked_throug
 #
 def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-        curr_activation = sum(store.get_activation(cue, query_time, False) for cue in terms.values())
+        curr_activation = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
         curr_edges = sum(len(store.graph.out_edges(cue)) for cue in terms.values())
     else:
-        curr_activation = store.get_activation(result, query_time, False)
+        curr_activation = store.get_activation(result, query_time, True)
         curr_edges = len(store.graph.out_edges(result))
     avg_num_edges = store.graph.number_of_edges() / store.graph.number_of_nodes()
     if avg_activation_of_everything(store, query_time) == 0:
@@ -480,7 +492,7 @@ def test_model():
     # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
     # task_names = list(TASKS.keys())
     task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
-                'j_indonesia_mountain', 'j_volcano_mountain',
+                'j_indonesia_mountain', 'j_volcano_mountain', 'j_volcano_strategy_switch',
                    'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
                    'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
                   ]
