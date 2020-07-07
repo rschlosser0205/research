@@ -455,6 +455,13 @@ def num_results_fok(store, terms, result, query_time, results_looked_through, st
     return len(store.query_results)
     # FIXME is the same the whole time
 
+def create_historic_fok(fok_function):
+    foks = []
+    def real_fok(store, terms, result, query_time, results_looked_through, step_num):
+        foks.append(fok_function(store, terms, result, query_time, results_looked_through, step_num))
+        return mean(foks)
+    return real_fok
+
 
 
 def contextualize_fok(historical_fok_list, pure_fok):
@@ -527,6 +534,7 @@ def test_model():
         for concept in task.question_concepts: # familiarizing self with question concepts
             store.retrieve(time, concept)
         fok_function = determine_fok_function(fok_method)
+        historic_fok = create_historic_fok(fok_function)
         prev_fok = []
         prev_result = None
 
@@ -554,7 +562,8 @@ def test_model():
 
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
-                print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
+                hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
+                print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok) + ', historic fok = ' + str(hist_fok))
                 print(result['node_id'])
                 fok_list.append(pure_fok)  # FOK TO TABLE
                 step_list.append(str(step_num))  # STEP TO TABLE
