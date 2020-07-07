@@ -456,16 +456,13 @@ class NetworkXKB(KnowledgeStore):
     def get_activation(self, mem_id, current_time, pre_query):
         if not self.graph.__contains__(mem_id):
             return 0
-        # if pre_query, ignore all tuples with the most recent time stamp
+        # if pre_query, set current time to current_time - 0.00001
+        if pre_query:
+            current_time -= 0.00001
         total_act = 0
-        if len(self.graph.nodes[mem_id]['activation']) > 0:
-            ignore_time, data = self.graph.nodes[mem_id]['activation'][0]
         for time_stamp, scale_factor in self.graph.nodes[mem_id]['activation']:
             time_since = current_time - time_stamp
             if time_since < 0: # time travel: ignore this tuple
-                continue
-            elif pre_query and time_stamp == ignore_time:
-                # activation is from query, ignore this tuple
                 continue
             elif time_since == 0: # time_since approaches zero
                 total_act = total_act + scale_factor * (0.000000000001**(self.activation_class.decay_rate))
