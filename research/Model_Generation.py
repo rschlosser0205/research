@@ -5,6 +5,10 @@ from collections import namedtuple
 from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
 
+from bokeh.io import show
+from bokeh.layouts import gridplot
+from bokeh.plotting import figure
+
 import plotly.graph_objects as go
 
 task_list = []
@@ -12,6 +16,8 @@ fok_method_list = []
 result_list = []
 fok_list = []
 step_list = []
+
+
 Task = namedtuple('Task', 'knowledge_list, retrieval_steps, question_concepts, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
@@ -371,8 +377,6 @@ def target_activation(store, result, query_time):
 
 
 
-
-
 # actual fok methods
 
 def straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
@@ -477,32 +481,75 @@ def populate(store, link, store_time, activate_on_store, knowledge_list):
         store_time += 1
     return store_time
 
+# visuals
+
 def create_table(headers, column_values):
     fig = go.Figure(data=[go.Table(header=dict(values=headers),
                                    cells=dict(values=column_values))
                           ])
     fig.show()
 
+def create_and_display_graph(steps, foks, fok_method, task_names):
+    color_list = ['#f52500', '#f59700', '#c9b500', '#5ca602', '#05e8a8', '#00c5db', '#0038d1', '#9457ff', '#cc28fa',
+                  '#e305a4']
+
+    graph_list = []
+
+    for name in TASKS.keys():
+        index = task_names.index(name)
+        graph = figure(title=name, x_axis_label='Step Num',
+                       y_axis_label='FOK')
+        method_name = fok_method[index]
+        color_index = 0
+        x_list = []
+        y_list = []
+        while True:
+            while steps[index] != '':
+                assert foks[index] != ''
+                x_list.append(steps[index])
+                y_list.append(foks[index])
+                index += 1
+            if index == len(steps) -1:    # end of the list
+                break
+            index += 1  # skipping over blank line in method
+            graph.circle(x_list, y_list, line_width=4, color=color_list[color_index])
+            graph.line(x_list, y_list, line_width=2, color=color_list[color_index])
+
+            if task_names[index] == name:  # next plot of different fok method
+                x_list = []
+                y_list = []
+                color_index += 1
+                assert color_index <= len(color_list)
+                method_name = fok_method[index]
+            else:
+                break  # next graph
+        graph_list.append(graph)
+
+    grid = gridplot([graph_list], plot_width=490, plot_height=500)
+    show(grid)
+
+
+
 
 def test_model():
-    global task_list, fok_method_list, step_list, fok_list, result_list
+    global task_list, fok_method_list, step_list, fok_list, result_list, graph_task_names, graph_fok_methods, graph_fok_nums, graph_steps
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
     act_capped = [True]
-    backlinks = [True, False]
+    backlinks = [True]
     fok_method = [
         'straight_activation_fok', 'act_over_all_fok', 'results_looked_through', 'step_num',
         'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
         'competition_fok_2'
     ]
     # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
-    # task_names = list(TASKS.keys())
-    task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
-                'j_indonesia_mountain', 'j_volcano_mountain', 'j_volcano_strategy_switch',
-                   'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
-                   'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
-                  ]
+    task_names = list(TASKS.keys())
+    # task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
+    #             'j_indonesia_mountain', 'j_volcano_mountain', 'j_volcano_strategy_switch',
+    #                'j_marapi_to_volcano', 'j_oval_office', 'krakatoa_dutch', 'j_nathan_birth_year',
+    #                'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
+    #               ]
 
     generator = product(
         task_names,
@@ -529,6 +576,10 @@ def test_model():
         ]))
         fok_method_list.append(fok_method)  # FOK METHOD TO TABLE
         task_list.append(str(task_name))  # TASK TO TABLE
+
+        # graph_fok_methods.append(fok_method)   # FOK METHOD TO GRAPH
+        # graph_task_names.append((str(task_name)))   # TASK TO GRAPH
+
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
         for concept in task.question_concepts: # familiarizing self with question concepts
@@ -560,6 +611,10 @@ def test_model():
                 task_list.append('')
                 result_list.append(result['node_id'])  # RESULT TO TABLE
 
+                graph_fok_methods.append(fok_method)  # FOK METHOD TO GRAPH part 2
+                graph_task_names.append((str(task_name)))  # TASK TO GRAPH
+
+
                 # calculate fok
                 pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
@@ -567,6 +622,11 @@ def test_model():
                 print(result['node_id'])
                 fok_list.append(pure_fok)  # FOK TO TABLE
                 step_list.append(str(step_num))  # STEP TO TABLE
+
+                graph_steps.append(str(step_num))   # STEP TO GRAPH
+                graph_fok_nums.append((pure_fok))   # FOK TO GRAPH
+
+
 
                 if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                     # if the constraints are met, move on to the next step
@@ -599,6 +659,15 @@ def test_model():
         step_list.append('')
         print()
 
+        print(len(graph_fok_nums), len(graph_task_names), len(graph_fok_methods), len(graph_steps))
+    create_and_display_graph(step_list, fok_list, fok_method_list, task_list)
+    #print(graph_fok_nums)
+
+
 test_model()
-create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
+# create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
+#create_and_display_graph()
+
+
+
 
