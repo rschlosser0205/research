@@ -15,6 +15,7 @@ task_list = []
 fok_method_list = []
 result_list = []
 fok_list = []
+hist_fok_list = []
 step_list = []
 
 
@@ -467,12 +468,12 @@ def create_historic_fok(fok_function):
     return real_fok
 
 
-
-def contextualize_fok(historical_fok_list, pure_fok):
-    # store pure fok in a list
-    historical_fok_list.append(pure_fok)
-    # then avg that list and multiply it w pure fok of the current node
-    return (pure_fok * mean(historical_fok_list)), historical_fok_list
+#
+# def contextualize_fok(historical_fok_list, pure_fok):
+#     # store pure fok in a list
+#     historical_fok_list.append(pure_fok)
+#     # then avg that list and multiply it w pure fok of the current node
+#     return (pure_fok * mean(historical_fok_list)), historical_fok_list
 
 
 def populate(store, link, store_time, activate_on_store, knowledge_list):
@@ -489,7 +490,7 @@ def create_table(headers, column_values):
                           ])
     fig.show()
 
-def create_and_display_graph(steps, foks, fok_method, task_names):
+def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
     color_list = ['#f52500', '#f59700', '#c9b500', '#5ca602', '#05e8a8', '#00c5db', '#0038d1', '#9457ff', '#cc28fa',
                   '#e305a4']
 
@@ -503,11 +504,13 @@ def create_and_display_graph(steps, foks, fok_method, task_names):
         color_index = 0
         x_list = []
         y_list = []
+        hist_list = []
         while True:
             while steps[index] != '':
                 assert foks[index] != ''
                 x_list.append(steps[index])
                 y_list.append(foks[index])
+                hist_list.append(hist_foks[index])
                 index += 1
             if index == len(steps) -1:    # end of the list
                 break
@@ -515,9 +518,13 @@ def create_and_display_graph(steps, foks, fok_method, task_names):
             graph.circle(x_list, y_list, line_width=4, color=color_list[color_index])
             graph.line(x_list, y_list, line_width=2, color=color_list[color_index])
 
+            graph.circle(x_list, hist_list, line_width=3, color=color_list[color_index])
+            graph.line(x_list, hist_list, line_width=2, color=color_list[color_index], line_dash='dotted')
+
             if task_names[index] == name:  # next plot of different fok method
                 x_list = []
                 y_list = []
+                hist_list = []
                 color_index += 1
                 assert color_index <= len(color_list)
                 method_name = fok_method[index]
@@ -532,13 +539,13 @@ def create_and_display_graph(steps, foks, fok_method, task_names):
 
 
 def test_model():
-    global task_list, fok_method_list, step_list, fok_list, result_list, graph_task_names, graph_fok_methods, graph_fok_nums, graph_steps
+    global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
     act_capped = [True]
     backlinks = [True]
-    fok_method = [
+    fok_methods = [
         'straight_activation_fok', 'act_over_all_fok', 'results_looked_through', 'step_num',
         'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
         'competition_fok_2'
@@ -551,6 +558,11 @@ def test_model():
     #                'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
     #               ]
 
+    # task_names = ['ABAB_direct', 'ABCB_direct', 'ABCD_direct', 'ABAD_direct',
+    #               'ABAB_pairs', 'ABCB_pairs', 'ABCD_pairs', 'ABAD_pairs',
+    #                 'ABAB_types', 'ABCB_types', 'ABCD_types', 'ABAD_types',]
+
+
     generator = product(
         task_names,
         act_decay_rate,
@@ -558,7 +570,8 @@ def test_model():
         act_max_steps,
         act_capped,
         backlinks,
-        fok_method,
+        fok_methods,
+
 
     )
 
@@ -586,7 +599,6 @@ def test_model():
             store.retrieve(time, concept)
         fok_function = determine_fok_function(fok_method)
         historic_fok = create_historic_fok(fok_function)
-        prev_fok = []
         prev_result = None
 
         # loop through the retrieval steps
@@ -611,8 +623,7 @@ def test_model():
                 task_list.append('')
                 result_list.append(result['node_id'])  # RESULT TO TABLE
 
-                graph_fok_methods.append(fok_method)  # FOK METHOD TO GRAPH part 2
-                graph_task_names.append((str(task_name)))  # TASK TO GRAPH
+
 
 
                 # calculate fok
@@ -620,11 +631,11 @@ def test_model():
                 hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                 print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok) + ', historic fok = ' + str(hist_fok))
                 print(result['node_id'])
+                hist_fok_list.append(hist_fok)
                 fok_list.append(pure_fok)  # FOK TO TABLE
                 step_list.append(str(step_num))  # STEP TO TABLE
 
-                graph_steps.append(str(step_num))   # STEP TO GRAPH
-                graph_fok_nums.append((pure_fok))   # FOK TO GRAPH
+
 
 
 
@@ -634,7 +645,7 @@ def test_model():
                         prev_result = result[step.result_attr]
                         # and add this current pure fok to the history (?)
                         # (and this is the step level, I suppose, as this if is the gate to the next step)
-                        informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
+                        # informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
                         # print('informed/contextualized fok = ' + str(informed_fok))
                         break
                     else:
@@ -656,12 +667,11 @@ def test_model():
         print(prev_result)
         result_list.append(prev_result)
         fok_list.append('')
+        hist_fok_list.append('')
         step_list.append('')
         print()
 
-        print(len(graph_fok_nums), len(graph_task_names), len(graph_fok_methods), len(graph_steps))
-    create_and_display_graph(step_list, fok_list, fok_method_list, task_list)
-    #print(graph_fok_nums)
+    create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list)
 
 
 test_model()
