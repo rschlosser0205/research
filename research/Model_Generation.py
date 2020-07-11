@@ -19,9 +19,10 @@ hist_fok_list = []
 step_list = []
 
 
-Task = namedtuple('Task', 'knowledge_list, retrieval_steps, question_concepts, activate_on_store')
+Task = namedtuple('Task', 'knowledge_list, strategies, question_concepts, activate_on_store')
 Knowledge = namedtuple('Knowledge', 'node_id, attributes')
 RetrievalStep = namedtuple('RetrievalStep', 'action, query_terms, constraints, result_attr')
+Strategies = namedtuple('Strategies', 'retrieval_steps')
 volcano_knowledge_list = [Knowledge('indonesia', {
                     'type': 'country',
                     'capital': 'jakarta',
@@ -94,74 +95,85 @@ TASKS = {
             Knowledge('node_pedestrian', {'also_called': 'walker', 'num_letters': '10', 'name': 'pedestrian'}),
             Knowledge('node_lane', {'part_of_a': 'road', 'num_letters': '4', 'name': 'lane'}),
         ],
-        retrieval_steps=[
-            RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),
+        strategies=[
+            [RetrievalStep('query', {'also_called': 'plan_showing_streets'}, {'num_letters': '4'}, 'name'),]
         ],
         question_concepts=['city', '4', 'plan_showing_streets'],
         activate_on_store=False
     ),
 
-    'j_volcano_to_marapi': Task(
+    'j_marapi': Task(
         knowledge_list=volcano_knowledge_list,
-        retrieval_steps=[
-            RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'), # returns null (so try again!)
-            RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
+        strategies=[
+            [RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'), ],# returns null (so try again!)
+            [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
+            [RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')],
+            [RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),],
+            [RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),], # returns null, so try something different
+            [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
+            # free associate on fire
+            [RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
+            # free associate on mountain (should not return hill bc lava was just queried activated)
+            RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),]
+
+
+
         ],
         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
         activate_on_store=False
     ),
-    'j_volcano_fire': Task(
-            knowledge_list=volcano_knowledge_list,
-            retrieval_steps=[
-                RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')
-            ],
-            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
-            activate_on_store=False
-        ),
-    'j_indonesia_mountain': Task(
-            knowledge_list= volcano_knowledge_list,
-            retrieval_steps=[
-                RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
-            ],
-            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
-            activate_on_store=False
-        ),
-    'j_volcano_mountain': Task(
-            knowledge_list= volcano_knowledge_list,
-            retrieval_steps=[
-                # free associate on mountain (may return hill)
-                RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
-            ],
-            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
-            activate_on_store=False
-        ),
-    'j_marapi_to_volcano': Task(
-                knowledge_list= volcano_knowledge_list,
-                retrieval_steps=[
-                    RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'), # returns null, so try something different
-                    RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
-                ],
-                question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
-                activate_on_store=False
-            ),
-    'j_volcano_strategy_switch': Task(
-            knowledge_list= volcano_knowledge_list,
-            retrieval_steps=[
-                # free associate on fire
-                RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
-                # free associate on mountain (should not return hill bc lava was just queried activated)
-                RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
-            ],
-            question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
-            activate_on_store=False
-        ),
+    # 'j_volcano_fire': Task(
+    #         knowledge_list=volcano_knowledge_list,
+    #         retrieval_steps=[
+    #             RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')
+    #         ],
+    #         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+    #         activate_on_store=False
+    #     ),
+    # 'j_indonesia_mountain': Task(
+    #         knowledge_list= volcano_knowledge_list,
+    #         retrieval_steps=[
+    #             RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
+    #         ],
+    #         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+    #         activate_on_store=False
+    #     ),
+    # 'j_volcano_mountain': Task(
+    #         knowledge_list= volcano_knowledge_list,
+    #         retrieval_steps=[
+    #             # free associate on mountain (may return hill)
+    #             RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
+    #         ],
+    #         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+    #         activate_on_store=False
+    #     ),
+    # 'j_marapi_to_volcano': Task(
+    #             knowledge_list= volcano_knowledge_list,
+    #             retrieval_steps=[
+    #                 RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'), # returns null, so try something different
+    #                 RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') # returns volcano
+    #             ],
+    #             question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+    #             activate_on_store=False
+    #         ),
+    # 'j_volcano_strategy_switch': Task(
+    #         knowledge_list= volcano_knowledge_list,
+    #         retrieval_steps=[
+    #             # free associate on fire
+    #             RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
+    #             # free associate on mountain (should not return hill bc lava was just queried activated)
+    #             RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),
+    #         ],
+    #         question_concepts=['indonesia', 'marapi', 'fire mountain', 'fire', 'mountain'],
+    #         activate_on_store=False
+    #     ),
 
     'krakatoa_dutch': Task(
                 knowledge_list= volcano_knowledge_list,
-                retrieval_steps=[
-                    RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'located in'), # krakatoa --> indonesia
+                strategies=[
+                    [RetrievalStep('query', {'type': 'volcano'}, {'last eruption': '2020', 'setting for': '21 balloons'}, 'located in'), # krakatoa --> indonesia
                     RetrievalStep('retrieve', {}, {}, 'colonized by'), # the netherlands
-                    RetrievalStep('retrieve', {}, {}, 'official language') # dutch!
+                    RetrievalStep('retrieve', {}, {}, 'official language')] # dutch!
                 ],
                 question_concepts=['official language', 'europe', 'nation', 'volcano', 'islands', '2020', '21 balloons', 'william pene du bois'],
                 activate_on_store=False
@@ -177,8 +189,8 @@ TASKS = {
             Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
             Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
-            retrieval_steps=[
-                RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),
+            strategies=[
+                [RetrievalStep('query', {'is_a': 'room'}, {'designed_by': 'nathan_c_wyeth', 'located_in': 'the_white_house'}, 'name'),]
         ],
             question_concepts=['shape', 'room', 'nathan_c_wyeth', 'william_taft', '1909'],
             activate_on_store=False
@@ -195,9 +207,9 @@ TASKS = {
             Knowledge('william_taft', {'is_a': 'president', 'president_number': '27', 'assumed_office_in': '1909', 'ordered_construction_of': 'oval_office'}),
             Knowledge('1909', {'marks_opening_of': 'manhattan_bridge'}),
         ],
-            retrieval_steps=[
-                RetrievalStep('query', {'is_a': 'room'}, {'located_in': 'the_white_house'}, 'designed_by'),
-                RetrievalStep('retrieve', {}, {}, 'year_born')
+            strategies=[
+                [RetrievalStep('query', {'is_a': 'room'}, {'located_in': 'the_white_house'}, 'designed_by'),
+                RetrievalStep('retrieve', {}, {}, 'year_born')]
         ],
             question_concepts=['year_born', 'architect', 'shape', 'room', 'the_white_house', '1909'],
             activate_on_store=False
@@ -210,10 +222,10 @@ TASKS = {
             Knowledge('u_of_michigan', {'is_a': 'university', 'mascot_name': 'willy'}),
             Knowledge('willy', {'animal_type': 'wolverine', 'is_a': 'name'}),
         ],
-            retrieval_steps=[
-                RetrievalStep('query', {'is_a': 'american_sport'}, {}, 'best_d1_team'),
+            strategies=[
+                [RetrievalStep('query', {'is_a': 'american_sport'}, {}, 'best_d1_team'),
                 RetrievalStep('retrieve', {}, {}, 'mascot_name'),
-                RetrievalStep('retrieve', {}, {}, 'animal_type')
+                RetrievalStep('retrieve', {}, {}, 'animal_type')]
         ],
             question_concepts=['name', 'mascot', 'university', 'most_wins', 'american_sport'],
             activate_on_store=False
@@ -228,10 +240,10 @@ TASKS = {
             Knowledge('yellow', {'is_a': 'color'})
 
         ],
-            retrieval_steps=[
-                RetrievalStep('query', {'notable_info': 'largest_man_made_structure'}, {}, 'located_in'),
+            strategies=[
+                [RetrievalStep('query', {'notable_info': 'largest_man_made_structure'}, {}, 'located_in'),
                 RetrievalStep('retrieve', {}, {}, 'flag_is'),
-                RetrievalStep('retrieve', {}, {}, 'main_color'),
+                RetrievalStep('retrieve', {}, {}, 'main_color'),]
         ],
             question_concepts=['color', 'flag', 'country', 'largest_man_made_structure'],
             activate_on_store=False
@@ -243,10 +255,10 @@ TASKS = {
             Knowledge('cambodia', {'is_a': 'country', 'national_flower': 'rumduol'}),
             Knowledge('rumduol', {'smells': 'good', 'color': 'yellow'}),
         ],
-            retrieval_steps=[
-                RetrievalStep('query', {'notable_info': 'largest_alphabet'}, {}, 'official_language_of'),
+            strategies=[
+                [RetrievalStep('query', {'notable_info': 'largest_alphabet'}, {}, 'official_language_of'),
                 RetrievalStep('retrieve', {}, {}, 'national_flower'),
-                RetrievalStep('retrieve', {}, {}, 'color'),
+                RetrievalStep('retrieve', {}, {}, 'color'),]
         ],
             question_concepts=['color', 'national_flower', 'country', 'language', 'largest_alphabet'],
             activate_on_store=False
@@ -259,38 +271,40 @@ TASKS = {
                 Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
                 Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
             ],
-                retrieval_steps=[
-                    RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'host city'), # los angeles
+                strategies=[
+                    [RetrievalStep('query', {'is_a': 'major international sporting event'}, {'year': '2028'}, 'host city'), # los angeles
                     RetrievalStep('retrieve', {}, {}, 'in nation'),  # usa
-                    RetrievalStep('retrieve', {}, {}, 'capital') #dc
+                    RetrievalStep('retrieve', {}, {}, 'capital')] #dc
             ],
                 question_concepts=['capital', 'nation', 'major international sporting event', '2028'],
                 activate_on_store=False
             ),
+
     'lanyard': Task(
-                    knowledge_list=[
-                    Knowledge('occidental', {'is_a': 'college', 'mascot': 'oswald', 'city': 'los angeles', 'state': 'california',
-                                             'president': 'harry elam'}),
-                    Knowledge('college', {'is_a': 'academic institution', 'gives': 'degree', 'has': 'dorm',
-                                          'enrolls': 'students', 'employs': 'professors'}),
-                    Knowledge('harvard', {'is_a': 'college', 'known for': 'prestige'}),
-                    Knowledge('liberal arts school', {'is_a': 'college'}),
-                    Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key'}),
-                    Knowledge('key', {'used for': 'doors'}),
-                    Knowledge('keychain', {'holds': 'key'}),
-                    Knowledge('lanyard', {'holds': 'key', 'used by': 'students'}),
-                    Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
-                    Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
-                    Knowledge('sailing', {'requires': 'ships', 'gives': 'degree'}),
-                    ],
-                    retrieval_steps=[
-                        RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id'), # high fok bc college, but fails
-                        RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'), # fails, too narrow
-                        RetrievalStep('query', {'holds': 'key'}, {}, 'node_id') # returns....lanyard, bc spreading from college
+                knowledge_list=[
+                Knowledge('occidental', {'is_a': 'college', 'mascot': 'oswald', 'city': 'los angeles', 'state': 'california',
+                                         'president': 'harry elam'}),
+                Knowledge('college', {'is_a': 'academic institution', 'gives': 'degree', 'has': 'dorm',
+                                      'enrolls': 'students', 'employs': 'professors'}),
+                Knowledge('harvard', {'is_a': 'college', 'known for': 'prestige'}),
+                Knowledge('liberal arts school', {'is_a': 'college'}),
+                Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key'}),
+                Knowledge('key', {'used for': 'doors'}),
+                Knowledge('keychain', {'holds': 'key'}),
+                Knowledge('lanyard', {'holds': 'key', 'used by': 'students'}),
+                Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
+                Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
+                Knowledge('sailing', {'requires': 'ships', 'gives': 'degree'}),
+
                 ],
-                    question_concepts=['college', 'dorm', 'key', 'sailing'],
-                    activate_on_store=False
-                ),
+                strategies=[
+                    [RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id'), # high fok bc college, but fails
+                    RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'), # fails, too narrow
+                    RetrievalStep('query', {'holds': 'key'}, {}, 'node_id')] # returns....lanyard, bc spreading from college
+            ],
+                question_concepts=['college', 'dorm', 'key', 'sailing'],
+                activate_on_store=False
+            ),
 }
 
 
@@ -319,21 +333,21 @@ def create_paired_recall_tasks():
                 knowledge_list.append(Knowledge(paradigm[i] + paradigm[i + 1], attributes))
 
         if representation == 'direct':
-            retrieval_steps = [
-                RetrievalStep('query', {'goes_to_b': 'B'}, {}, 'node_id'),
+            strategy = [
+                [RetrievalStep('query', {'goes_to_b': 'B'}, {}, 'node_id'),]
             ]
         elif representation == 'pairs':
-            retrieval_steps = [
-                RetrievalStep('query', {'first': 'A'}, {}, 'second'),
+            strategy = [
+                [RetrievalStep('query', {'first': 'A'}, {}, 'second'),]
             ]
         elif representation == 'types':
-            retrieval_steps = [
-                RetrievalStep('query', {'first': 'A'}, {}, 'second'),
+            strategy = [
+                [RetrievalStep('query', {'first': 'A'}, {}, 'second'),]
             ]
 
         globals()['TASKS'][variable_name] = Task(
             knowledge_list=knowledge_list,
-            retrieval_steps=retrieval_steps,
+            strategies=strategy,
             question_concepts=['A'],
             activate_on_store=True
         )
@@ -343,10 +357,10 @@ create_paired_recall_tasks()
 
 
 def determine_fok_function(method):
-    if method == 'straight_activation_fok':
+    if method == 'relative_activation_fok':
         return relative_activation_fok
-    elif method == 'act_over_all_fok':
-        return act_over_all_fok
+    elif method == 'act_over_all':
+        return placeholder
     elif method == 'results_looked_through':
         return results_looked_through_fok
     elif method == 'step_num':
@@ -366,12 +380,16 @@ def determine_fok_function(method):
 
 
 # helper functions to support more complicated fok methods
+
+# returns the sum of the activation of every node
 def avg_activation_of_everything(store, query_time):
     all_nodes = list(store.graph.nodes)
-    return sum(
+    avg = sum(
         store.get_activation(node, query_time, True)
         for node in all_nodes
-    ) / len(all_nodes)
+    )/len(all_nodes)
+    return avg
+
 
 def outgoing_edges_of_cue(store, terms, result, query_time, results_looked_through, step_num):
     avg_num_edges = store.graph.number_of_edges()/store.graph.number_of_nodes()
@@ -387,9 +405,12 @@ def cue_activation(store, terms, query_time):
     avg_act = avg_activation_of_everything(store, query_time)
     if avg_act == 0:
         return 0
-    return sum(
+    fok = sum(
         math.log(store.get_activation(cue, query_time, True)/avg_act) for cue in terms.values()
     )
+    # for cue in terms.values():
+    #     print(str(store.get_activation(cue, query_time, True)))
+    return fok
 
 def target_activation(store, result, query_time):
     if result is None:
@@ -404,20 +425,13 @@ def target_activation(store, result, query_time):
 
 # actual fok methods
 
+def placeholder(store, terms, result, query_time, results_looked_through, step_num):
+    return 1
+
 def relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-       return cue_activation(store, terms, query_time)
+        return cue_activation(store, terms, query_time)
     return target_activation(store, result, query_time)
-
-# returns the current node's activation as a share of total activation of all nodes in the network
-def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):  #FIXME
-    all_nodes = list(store.graph.nodes)
-    total_act = sum(
-        store.get_activation(node, query_time, True) for node in all_nodes
-    )
-    if total_act == 0:
-        return 0
-    return relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num)
 
 
 def results_looked_through_fok(store, terms, result, query_time, results_looked_through, step_num):
@@ -434,7 +448,7 @@ def outgoing_edges_fok(store, terms, result, query_time, results_looked_through,
     else:
         return outgoing_edges_of_target(store, terms, result, query_time, results_looked_through, step_num)
 
-# logs first
+# logs first (we don't like this one)
 def act_over_edges_fok_1(store, terms, result, query_time, results_looked_through, step_num):
     relative_edges = outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
     if relative_edges == 0:
@@ -442,23 +456,24 @@ def act_over_edges_fok_1(store, terms, result, query_time, results_looked_throug
     return (relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num)
             / relative_edges)
 
-#
+# return log of current ratio of activation to edges div by avg ratio of actviation to edges
 def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
-        curr_activation = sum(store.get_activation(cue, query_time, True) for cue in terms.values())
-        curr_edges = sum(len(store.graph.out_edges(cue)) for cue in terms.values())
+        curr_ratio = sum(
+            (store.get_activation(cue, query_time, True)/len(store.graph.out_edges(cue)) for cue in terms.values()
+             if store.graph.out_edges(cue) != 0)
+    )
+    elif result is not None and store.graph.out_edges(result) != 0:
+        curr_ratio = store.get_activation(result, query_time, True)/len(store.graph.out_edges(result))
     else:
-        curr_activation = store.get_activation(result, query_time, True)
-        curr_edges = len(store.graph.out_edges(result))
-    avg_num_edges = store.graph.number_of_edges() / store.graph.number_of_nodes()
-    if avg_activation_of_everything(store, query_time) == 0:
         return 0
-    activation_ratio = curr_activation/avg_activation_of_everything(store, query_time)
-    if curr_edges == 0 or avg_num_edges == 0:
-        return 0
-    edges_ratio = curr_edges/avg_num_edges
+    avg_ratio = sum(
+        store.get_activation(node, query_time, True) / len(store.graph.out_edges(node)) for node in store.graph.nodes
+        if store.graph.out_edges(node) != 0
+    )
+    avg_ratio = avg_ratio/store.graph.number_of_nodes()
     return math.log(
-        activation_ratio/edges_ratio
+        curr_ratio/avg_ratio
     )
 
 # returns 1/ the relative edges measurement defined above
@@ -575,10 +590,11 @@ def test_model():
     act_capped = [True]
     backlinks = [True]
     fok_methods = [
-        'straight_activation_fok', 'act_over_all_fok', 'results_looked_through', 'step_num',
+        'relative_activation_fok', 'act_over_all', 'results_looked_through', 'step_num',
         'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
         'competition_fok_2'
     ]
+    fok_methods = ['relative_activation_fok']
     # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
     task_names = list(TASKS.keys())
     # task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
@@ -587,9 +603,8 @@ def test_model():
     #                'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
     #               ]
 
-    # task_names = ['ABAB_direct', 'ABCB_direct', 'ABCD_direct', 'ABAD_direct',
-    #               'ABAB_pairs', 'ABCB_pairs', 'ABCD_pairs', 'ABAD_pairs',
-    #                 'ABAB_types', 'ABCB_types', 'ABCD_types', 'ABAD_types',]
+    # task_names = ['ABAB_pairs', 'ABCB_pairs', 'ABCD_pairs', 'ABAD_pairs',
+    #                  'ABAB_types', 'ABCB_types', 'ABCD_types', 'ABAD_types',]
 
 
     generator = product(
@@ -629,90 +644,97 @@ def test_model():
         historic_fok = create_historic_fok(fok_function)
         prev_result = None
 
-        # loop through the retrieval steps
-        for step_num, step in enumerate(task.retrieval_steps, start=1):
-            # print(step)
-            # take the retrieval step
-            if step.action == 'query':
-                if step in query_list:  # if this entire query retrieval step has been done before in this task, don't try again
-                    print('youve already done this, try another query')
-                result = store.query(time, False, step.query_terms)
-                query_list.append(step)  # append the whole retrieval step
-            elif step.action == 'retrieve':
-                if prev_result in retrieval_dict and step.result_attr == retrieval_dict[prev_result]:
-                    print('youve already done this, try another retrieval')
-                result = store.retrieve(time, prev_result)
-                retrieval_dict.update({prev_result: step.result_attr})  # append the previous result and the result attribute (ex. indonesia: colonized by)
+        # loop through the retrieval strategies
+        for strategy in task.strategies:
+            # loop through retrieval steps
 
-            else:
-                print('invalid action: ' + step.action)
-                return
-            failed = result is None
-            results_looked_through = 1
-            time += 1
-
-            while not failed:
-                # print(str(result['node_id']) + ' '+ str(store.get_activation(result['node_id'], time, False)))
-
-                fok_method_list.append('')
-                task_list.append('')
-                result_list.append(result['node_id'])  # RESULT TO TABLE
-
-
-
-
-                # calculate fok
-                pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
-                hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
-                print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok) + ', historic fok = ' + str(hist_fok))
-                print(result['node_id'])
-                hist_fok_list.append(hist_fok)
-                fok_list.append(pure_fok)  # FOK TO TABLE
-                step_list.append(str(step_num))  # STEP TO TABLE
-
-
-
-
-
-                if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
-                    # if the constraints are met, move on to the next step
-                    if result.__contains__(step.result_attr):
-                        prev_result = result[step.result_attr]
-                        # and add this current pure fok to the history (?)
-                        # (and this is the step level, I suppose, as this if is the gate to the next step)
-                        # informed_fok, prev_fok = contextualize_fok(prev_fok, pure_fok)
-                        # print('informed/contextualized fok = ' + str(informed_fok))
+            for step_num, step in enumerate(strategy, start=1):
+                done = False
+                # take the retrieval step
+                if step.action == 'query':
+                    if step in query_list:  # if this entire query retrieval step has been done before in this task, don't try again
+                        print('youve already done this, try another query')
+                        # go to next strategy
                         break
-                    else:
-                        # curr result does not have the result_attr we were expecting. continue looping through results
+                    result = store.query(time, False, step.query_terms)
+                    query_list.append(step)  # append the whole retrieval step
+                elif step.action == 'retrieve':
+                    if prev_result in retrieval_dict and step.result_attr == retrieval_dict[prev_result]:
+                        print('youve already done this, try another retrieval')
+                        # move on to next strategy
+                        break
+                    result = store.retrieve(time, prev_result)
+                    retrieval_dict.update({prev_result: step.result_attr})  # append the previous result and the result attribute (ex. indonesia: colonized by)
+
+                else:
+                    print('invalid action: ' + step.action)
+                    return
+                failed = result is None
+                results_looked_through = 1
+                time += 1
+
+                while not failed:
+                    # print(str(result['node_id']) + ' '+ str(store.get_activation(result['node_id'], time, False)))
+
+                    fok_method_list.append('')
+                    task_list.append('')
+                    result_list.append(result['node_id'])  # RESULT TO TABLE
+
+
+
+
+
+                    # calculate fok
+                    pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
+                    hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
+                    print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
+                    print(result['node_id'])
+                    hist_fok_list.append(hist_fok)
+                    fok_list.append(pure_fok)  # FOK TO TABLE
+                    step_list.append(str(step_num))  # STEP TO TABLE
+
+
+
+
+
+                    if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
+                        # if the constraints are met, move on to the next step
+                        if result.__contains__(step.result_attr):
+                            prev_result = result[step.result_attr]
+                            break
+                        else:
+                            # curr result does not have the result_attr we were expecting. continue looping through results
+                            results_looked_through += 1
+                            # if there is a next result, move on to the next result
+                            result = store.next_result(time)
+                    elif store.has_next_result:
                         results_looked_through += 1
                         # if there is a next result, move on to the next result
                         result = store.next_result(time)
-                elif store.has_next_result:
-                    results_looked_through += 1
-                    # if there is a next result, move on to the next result
-                    result = store.next_result(time)
-                else:
-                    # otherwise, we've hit a dead end
-                    print('this is a dead end')
-                    failed = True
-                time += 1
-            if failed:
+                    else:
+                        # otherwise, we've hit a dead end
+                        print('this is a dead end')
+                        failed = True
+                    time += 1
+                if failed:
+                    break
+                # if you haven't broken out by now, you have found an answer by completing one of the strategies, so you are done!
+                print(prev_result)
+                result_list.append(prev_result)
+                fok_list.append('')
+                hist_fok_list.append('')
+                step_list.append('')
+                print()
+                done = True
+            if done:
                 break
-        print(prev_result)
-        result_list.append(prev_result)
-        fok_list.append('')
-        hist_fok_list.append('')
-        step_list.append('')
-        print()
 
-    create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list)
+    # create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list)
 
 
 test_model()
-# create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
+create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
 #create_and_display_graph()
-#sehrjkejrgh
 
 
 
