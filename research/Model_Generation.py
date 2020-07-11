@@ -267,6 +267,30 @@ TASKS = {
                 question_concepts=['capital', 'nation', 'major international sporting event', '2028'],
                 activate_on_store=False
             ),
+    'lanyard': Task(
+                    knowledge_list=[
+                    Knowledge('occidental', {'is_a': 'college', 'mascot': 'oswald', 'city': 'los angeles', 'state': 'california',
+                                             'president': 'harry elam'}),
+                    Knowledge('college', {'is_a': 'academic institution', 'gives': 'degree', 'has': 'dorm',
+                                          'enrolls': 'students', 'employs': 'professors'}),
+                    Knowledge('harvard', {'is_a': 'college', 'known for': 'prestige'}),
+                    Knowledge('liberal arts school', {'is_a': 'college'}),
+                    Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key'}),
+                    Knowledge('key', {'used for': 'doors'}),
+                    Knowledge('keychain', {'holds': 'key'}),
+                    Knowledge('lanyard', {'holds': 'key', 'used by': 'students'}),
+                    Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
+                    Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
+                    Knowledge('sailing', {'requires': 'ships', 'gives': 'degree'}),
+                    ],
+                    retrieval_steps=[
+                        RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id'), # high fok bc college, but fails
+                        RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'), # fails, too narrow
+                        RetrievalStep('query', {'holds': 'key'}, {}, 'node_id') # returns....lanyard, bc spreading from college
+                ],
+                    question_concepts=['college', 'dorm', 'key', 'sailing'],
+                    activate_on_store=False
+                ),
 }
 
 
@@ -320,7 +344,7 @@ create_paired_recall_tasks()
 
 def determine_fok_function(method):
     if method == 'straight_activation_fok':
-        return straight_activation_fok
+        return relative_activation_fok
     elif method == 'act_over_all_fok':
         return act_over_all_fok
     elif method == 'results_looked_through':
@@ -380,20 +404,20 @@ def target_activation(store, result, query_time):
 
 # actual fok methods
 
-def straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
+def relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
        return cue_activation(store, terms, query_time)
     return target_activation(store, result, query_time)
 
 # returns the current node's activation as a share of total activation of all nodes in the network
-def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):
+def act_over_all_fok(store, terms, result, query_time, results_looked_through, step_num):  #FIXME
     all_nodes = list(store.graph.nodes)
     total_act = sum(
         store.get_activation(node, query_time, True) for node in all_nodes
     )
     if total_act == 0:
         return 0
-    return straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num)/ total_act
+    return relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num)
 
 
 def results_looked_through_fok(store, terms, result, query_time, results_looked_through, step_num):
@@ -415,8 +439,8 @@ def act_over_edges_fok_1(store, terms, result, query_time, results_looked_throug
     relative_edges = outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num)
     if relative_edges == 0:
         return 0
-    return straight_activation_fok(store, terms, result, query_time, results_looked_through, step_num) \
-        /  relative_edges
+    return (relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num)
+            / relative_edges)
 
 #
 def act_over_edges_fok_2(store, terms, result, query_time, results_looked_through, step_num):
@@ -464,7 +488,12 @@ def create_historic_fok(fok_function):
     foks = []
     def real_fok(store, terms, result, query_time, results_looked_through, step_num):
         foks.append(fok_function(store, terms, result, query_time, results_looked_through, step_num))
-        return mean(foks)
+        if len(foks) < 2:  # baseline is 0
+            return mean(foks)
+        else:
+            return foks[len(foks)-1] - foks[len(foks)-2]  # delta of the last two foks to determine decrease/ increase
+
+
     return real_fok
 
 
@@ -576,6 +605,8 @@ def test_model():
     )
 
     for task_name, rate, scale, step, cap, backlink, fok_method, in generator:
+        query_list = []   # creating/ resetting query and retrieval lists
+        retrieval_dict = {}
         task = TASKS[task_name]
         print(', '.join([
             'task = ' + str(task_name),
@@ -590,9 +621,6 @@ def test_model():
         fok_method_list.append(fok_method)  # FOK METHOD TO TABLE
         task_list.append(str(task_name))  # TASK TO TABLE
 
-        # graph_fok_methods.append(fok_method)   # FOK METHOD TO GRAPH
-        # graph_task_names.append((str(task_name)))   # TASK TO GRAPH
-
         store = NetworkXKB(ActivationClass(rate, scale, step, cap))
         time = 1 + populate(store, backlink, 0, task.activate_on_store, task.knowledge_list)
         for concept in task.question_concepts: # familiarizing self with question concepts
@@ -606,9 +634,16 @@ def test_model():
             # print(step)
             # take the retrieval step
             if step.action == 'query':
+                if step in query_list:  # if this entire query retrieval step has been done before in this task, don't try again
+                    print('youve already done this, try another query')
                 result = store.query(time, False, step.query_terms)
+                query_list.append(step)  # append the whole retrieval step
             elif step.action == 'retrieve':
+                if prev_result in retrieval_dict and step.result_attr == retrieval_dict[prev_result]:
+                    print('youve already done this, try another retrieval')
                 result = store.retrieve(time, prev_result)
+                retrieval_dict.update({prev_result: step.result_attr})  # append the previous result and the result attribute (ex. indonesia: colonized by)
+
             else:
                 print('invalid action: ' + step.action)
                 return
