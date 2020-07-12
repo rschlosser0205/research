@@ -17,6 +17,7 @@ result_list = []
 fok_list = []
 hist_fok_list = []
 step_list = []
+strat_list = []
 
 
 Task = namedtuple('Task', 'knowledge_list, strategies, question_concepts, activate_on_store')
@@ -105,11 +106,10 @@ TASKS = {
     'j_marapi': Task(
         knowledge_list=volcano_knowledge_list,
         strategies=[
+            [RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),], # returns null, so try something different
             [RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'), ],# returns null (so try again!)
-            [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
             [RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')],
             [RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),],
-            [RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),], # returns null, so try something different
             [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
             # free associate on fire
             [RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
@@ -290,17 +290,20 @@ TASKS = {
                 Knowledge('liberal arts school', {'is_a': 'college'}),
                 Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key'}),
                 Knowledge('key', {'used for': 'doors'}),
+                Knowledge('lanyard', {'holds': 'key', 'used by': 'students', 'is not': 'keychain'}),
                 Knowledge('keychain', {'holds': 'key'}),
-                Knowledge('lanyard', {'holds': 'key', 'used by': 'students'}),
                 Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
                 Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
-                Knowledge('sailing', {'requires': 'ships', 'gives': 'degree'}),
+                Knowledge('sailing', {'requires': 'ships', 'form of': 'transportation'}),
 
                 ],
                 strategies=[
-                    [RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id'), # high fok bc college, but fails
-                    RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'), # fails, too narrow
-                    RetrievalStep('query', {'holds': 'key'}, {}, 'node_id')] # returns....lanyard, bc spreading from college
+                    [RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id')], # high fok bc college, but fails
+                    [RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'),], # does not fail immediately
+                    [RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'),], # does not fail immediately
+                    [RetrievalStep('query', {'holds': 'key'}, {'used by': 'students'}, 'node_id')], # try again from a different college angle
+                    [RetrievalStep('query', {'holds': 'key'}, {'is not': 'keychain'}, 'node_id')] # returns....lanyard!
+
             ],
                 question_concepts=['college', 'dorm', 'key', 'sailing'],
                 activate_on_store=False
@@ -359,16 +362,10 @@ create_paired_recall_tasks()
 def determine_fok_function(method):
     if method == 'relative_activation_fok':
         return relative_activation_fok
-    elif method == 'act_over_all':
-        return placeholder
-    elif method == 'results_looked_through':
-        return results_looked_through_fok
     elif method == 'step_num':
         return step_num_fok
     elif method == 'outgoing_edges_fok':
         return outgoing_edges_fok
-    elif method == 'act_over_edges_fok_1':
-        return act_over_edges_fok_1
     elif method == 'act_over_edges_fok_2':
         return act_over_edges_fok_2
     elif method == 'num_results_fok':
@@ -583,19 +580,17 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
 
 
 def test_model():
-    global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list
+    global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list, strat_list
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
     act_capped = [True]
     backlinks = [True]
     fok_methods = [
-        'relative_activation_fok', 'act_over_all', 'results_looked_through', 'step_num',
-        'outgoing_edges_fok', 'act_over_edges_fok_1', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
+        'relative_activation_fok', 'step_num',
+        'outgoing_edges_fok', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
         'competition_fok_2'
     ]
-    fok_methods = ['relative_activation_fok']
-    # 'cue_and_target', 'straight_activation_fok', 'act_over_avg_fok', 'results_looked_through', 'step_num', 'outgoing_edges_fok', 'act_over_edges_fok'
     task_names = list(TASKS.keys())
     # task_names = [ 'j_grid', 'j_volcano_to_marapi', 'j_volcano_fire',
     #             'j_indonesia_mountain', 'j_volcano_mountain', 'j_volcano_strategy_switch',
@@ -644,12 +639,20 @@ def test_model():
         historic_fok = create_historic_fok(fok_function)
         prev_result = None
 
+
         # loop through the retrieval strategies
-        for strategy in task.strategies:
+        for strategy_num, strategy in enumerate(task.strategies, start=1):
+            strat_list.append(strategy_num)
             # loop through retrieval steps
+            print('strategy #' + str(strategy_num))
 
             for step_num, step in enumerate(strategy, start=1):
+                fok = None
+                hist_fok = None
                 done = False
+                step_list.append(str(step_num))  # STEP TO TABLE
+                if step_num > 1:
+                    strat_list.append('')  # STRAT TO TABLE
                 # take the retrieval step
                 if step.action == 'query':
                     if step in query_list:  # if this entire query retrieval step has been done before in this task, don't try again
@@ -674,28 +677,21 @@ def test_model():
                 time += 1
 
                 while not failed:
-                    # print(str(result['node_id']) + ' '+ str(store.get_activation(result['node_id'], time, False)))
-
-                    fok_method_list.append('')
-                    task_list.append('')
-                    result_list.append(result['node_id'])  # RESULT TO TABLE
-
-
 
 
 
                     # calculate fok
-                    pure_fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
+                    fok = fok_function(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
                     hist_fok = historic_fok(store, step.query_terms, result['node_id'], time, results_looked_through, step_num)
-                    print('step ' + str(step_num) + ' pure_fok = ' + str(pure_fok))
+                    print('step ' + str(step_num) + ' fok = ' + str(fok))
                     print(result['node_id'])
-                    hist_fok_list.append(hist_fok)
-                    fok_list.append(pure_fok)  # FOK TO TABLE
-                    step_list.append(str(step_num))  # STEP TO TABLE
 
-
-
-
+                    # update table
+                    result_list.append(result['node_id'])  # RESULT TO TABLE
+                    fok_list.append(fok)  # FOK TO TABLE
+                    hist_fok_list.append(hist_fok)  # HIST FOK TO (TABLE?)
+                    task_list.append('')
+                    fok_method_list.append('')
 
                     if all(result.get(attr, None) == val for attr, val in step.constraints.items()):
                         # if the constraints are met, move on to the next step
@@ -707,6 +703,8 @@ def test_model():
                             results_looked_through += 1
                             # if there is a next result, move on to the next result
                             result = store.next_result(time)
+                            step_list.append(step_num)
+                            strat_list.append('')
                     elif store.has_next_result:
                         results_looked_through += 1
                         # if there is a next result, move on to the next result
@@ -716,25 +714,32 @@ def test_model():
                         print('this is a dead end')
                         failed = True
                     time += 1
+                if fok == None:
+                    result_list.append('--')
+                    fok_list.append(fok)
+                    hist_fok_list.append(hist_fok)
+                    task_list.append('')
+                    fok_method_list.append('')
                 if failed:
                     break
                 # if you haven't broken out by now, you have found an answer by completing one of the strategies, so you are done!
+                done = True
+            if done:
                 print(prev_result)
                 result_list.append(prev_result)
                 fok_list.append('')
                 hist_fok_list.append('')
                 step_list.append('')
+                strat_list.append('')
                 print()
-                done = True
-            if done:
                 break
 
     # create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list)
 
 
 test_model()
-create_table(['task', 'fok method', 'step num', 'fok', 'result'], [task_list, fok_method_list, step_list, fok_list, result_list])
-#create_and_display_graph()
+create_table(['task', 'fok method',  'strat num', 'step num', 'fok', 'result'], [task_list, fok_method_list, strat_list, step_list, fok_list, result_list])
+
 
 
 
