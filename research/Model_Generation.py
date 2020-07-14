@@ -2,7 +2,7 @@ import math
 from itertools import product
 from collections import namedtuple
 
-from bokeh.models import Label
+from bokeh.models import Label, LabelSet, ColumnDataSource
 
 from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
@@ -291,10 +291,15 @@ TASKS = {
                                       'enrolls': 'students', 'employs': 'professors'}),
                 Knowledge('harvard', {'is_a': 'college', 'known for': 'prestige'}),
                 Knowledge('liberal arts school', {'is_a': 'college'}),
-                Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key'}),
+                Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key', 'holds': 'students', 'located in': 'colleges'}),
                 Knowledge('key', {'used for': 'doors'}),
                 Knowledge('lanyard', {'holds': 'key', 'used by': 'students', 'is not': 'keychain'}),
                 Knowledge('keychain', {'holds': 'key'}),
+                Knowledge('notebook', {'used by': 'students', 'holds': 'notes'}),
+                Knowledge('laptop', {'used by': 'students', 'is a': 'computer'}),
+                Knowledge('backpack', {'used by': 'students', 'holds': 'books'}),
+                Knowledge('pencil', {'used by': 'students', 'color': 'yellow'}),
+                Knowledge('calculator', {'used by': 'students', 'performs': 'calculations'}),
                 Knowledge('los angeles', {'is_a': 'city', 'in nation': 'usa', 'in state': 'california', 'mayor': 'eric garcetti'}),
                 Knowledge('usa', {'is_a': 'nation', 'capital': 'washington dc'}),
                 Knowledge('sailing', {'requires': 'ships', 'form of': 'transportation'}),
@@ -540,17 +545,24 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, tim
         x_list = []
         y_list = []
         hist_list = []
+        step_labels = []
         while True:
             while steps[index] != '':
                 assert foks[index] != ''
                 x_list.append(time_stamps[index])
                 y_list.append(foks[index])
                 hist_list.append(hist_foks[index])
+                step_labels.append(step_list[index])
                 index += 1
             if index == len(steps) -1:    # end of the list
                 break
             index += 1  # skipping over blank line in method
             # legend_label=method_name
+
+            source = ColumnDataSource(data=dict(time=x_list,
+                                                fok=y_list,
+                                                strat_step=step_labels))
+
             graph.circle(x_list, y_list, line_width=4, color=color_list[color_index])
             graph.line(x_list, y_list, line_width=2, color=color_list[color_index])
 
@@ -558,12 +570,16 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, tim
             graph.line(x_list, hist_list, line_width=2, color=color_list[color_index], line_dash='dotted')
 
             # label point with strategy . step num
-            # label = Label(x=x_list[index], y=y_list[index], x_units='screen', text=step_list)
+            labels = LabelSet(x='time', y='fok', text='strat_step', level='glyph',
+                              x_offset=5, y_offset=5, source=source, render_mode='canvas')
+
+            graph.add_layout(labels)
 
             if task_names[index] == name:  # next plot of different fok method
                 x_list = []
                 y_list = []
                 hist_list = []
+                step_labels = []
                 color_index += 1
                 assert color_index <= len(color_list)
                 method_name = fok_method[index]
