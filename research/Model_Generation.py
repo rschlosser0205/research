@@ -2,6 +2,8 @@ import math
 from itertools import product
 from collections import namedtuple
 
+from bokeh.models import Label
+
 from research.rl_memory import ActivationClass, NetworkXKB
 from statistics import mean
 
@@ -18,6 +20,7 @@ fok_list = []
 hist_fok_list = []
 step_list = []
 strat_list = []
+time_list = []
 
 
 Task = namedtuple('Task', 'knowledge_list, strategies, question_concepts, activate_on_store')
@@ -300,7 +303,6 @@ TASKS = {
                 strategies=[
                     [RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id')], # high fok bc college, but fails
                     [RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'),], # does not fail immediately
-                    [RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'),], # does not fail immediately
                     [RetrievalStep('query', {'holds': 'key'}, {'used by': 'students'}, 'node_id')], # try again from a different college angle
                     [RetrievalStep('query', {'holds': 'key'}, {'is not': 'keychain'}, 'node_id')] # returns....lanyard!
 
@@ -422,8 +424,6 @@ def target_activation(store, result, query_time):
 
 # actual fok methods
 
-def placeholder(store, terms, result, query_time, results_looked_through, step_num):
-    return 1
 
 def relative_activation_fok(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
@@ -509,13 +509,6 @@ def create_historic_fok(fok_function):
     return real_fok
 
 
-#
-# def contextualize_fok(historical_fok_list, pure_fok):
-#     # store pure fok in a list
-#     historical_fok_list.append(pure_fok)
-#     # then avg that list and multiply it w pure fok of the current node
-#     return (pure_fok * mean(historical_fok_list)), historical_fok_list
-
 
 def populate(store, link, store_time, activate_on_store, knowledge_list):
     for knowledge in knowledge_list:
@@ -531,7 +524,8 @@ def create_table(headers, column_values):
                           ])
     fig.show()
 
-def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
+# FIXME ADD LABELS
+def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, time_stamps):
     color_list = ['#f52500', '#f59700', '#c9b500', '#5ca602', '#05e8a8', '#00c5db', '#0038d1', '#9457ff', '#cc28fa',
                   '#e305a4']
 
@@ -539,7 +533,7 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
 
     for name in TASKS.keys():
         index = task_names.index(name)
-        graph = figure(title=name, x_axis_label='Step Num',
+        graph = figure(title=name, x_axis_label='Time',
                        y_axis_label='FOK')
         method_name = fok_method[index]
         color_index = 0
@@ -549,18 +543,22 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
         while True:
             while steps[index] != '':
                 assert foks[index] != ''
-                x_list.append(steps[index])
+                x_list.append(time_stamps[index])
                 y_list.append(foks[index])
                 hist_list.append(hist_foks[index])
                 index += 1
             if index == len(steps) -1:    # end of the list
                 break
             index += 1  # skipping over blank line in method
+            # legend_label=method_name
             graph.circle(x_list, y_list, line_width=4, color=color_list[color_index])
             graph.line(x_list, y_list, line_width=2, color=color_list[color_index])
 
             graph.circle(x_list, hist_list, line_width=3, color=color_list[color_index])
             graph.line(x_list, hist_list, line_width=2, color=color_list[color_index], line_dash='dotted')
+
+            # label point with strategy . step num
+            # label = Label(x=x_list[index], y=y_list[index], x_units='screen', text=step_list)
 
             if task_names[index] == name:  # next plot of different fok method
                 x_list = []
@@ -580,7 +578,7 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names):
 
 
 def test_model():
-    global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list, strat_list
+    global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list, strat_list, time_list
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
     act_max_steps = [6]
@@ -642,7 +640,7 @@ def test_model():
 
         # loop through the retrieval strategies
         for strategy_num, strategy in enumerate(task.strategies, start=1):
-            strat_list.append(strategy_num)
+            # strat_list.append(strategy_num)
             # loop through retrieval steps
             print('strategy #' + str(strategy_num))
 
@@ -650,9 +648,10 @@ def test_model():
                 fok = None
                 hist_fok = None
                 done = False
-                step_list.append(str(step_num))  # STEP TO TABLE
-                if step_num > 1:
-                    strat_list.append('')  # STRAT TO TABLE
+                time_list.append(time)
+                step_list.append(float(str(strategy_num) + '.' + str(step_num)))  # STEP TO TABLE
+                # if step_num > 1:
+                    # strat_list.append('')  # STRAT TO TABLE
                 # take the retrieval step
                 if step.action == 'query':
                     if step in query_list:  # if this entire query retrieval step has been done before in this task, don't try again
@@ -703,12 +702,15 @@ def test_model():
                             results_looked_through += 1
                             # if there is a next result, move on to the next result
                             result = store.next_result(time)
-                            step_list.append(step_num)
-                            strat_list.append('')
+                            time_list.append(time)
+                            step_list.append(float(str(strategy_num) + '.' + str(step_num)))
+                            # strat_list.append('')
                     elif store.has_next_result:
                         results_looked_through += 1
                         # if there is a next result, move on to the next result
                         result = store.next_result(time)
+                        time_list.append(time)
+                        step_list.append(float(str(strategy_num) + '.' + str(step_num)))
                     else:
                         # otherwise, we've hit a dead end
                         print('this is a dead end')
@@ -730,15 +732,15 @@ def test_model():
                 fok_list.append('')
                 hist_fok_list.append('')
                 step_list.append('')
+                time_list.append('')
                 strat_list.append('')
                 print()
                 break
-
-    # create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list)
+    create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list, time_list)
 
 
 test_model()
-create_table(['task', 'fok method',  'strat num', 'step num', 'fok', 'result'], [task_list, fok_method_list, strat_list, step_list, fok_list, result_list])
+#create_table(['task', 'fok method', 'strategy . step', 'fok', 'historic fok', 'result'], [task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list])
 
 
 
