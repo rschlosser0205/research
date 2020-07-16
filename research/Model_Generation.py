@@ -111,13 +111,14 @@ TASKS = {
         strategies=[
             [RetrievalStep('query', {'name': 'Marapi'}, {}, 'is a'),], # returns null, so try something different
             [RetrievalStep('query', {'famous example': 'marapi'}, {}, 'name'), ],# returns null (so try again!)
-            [RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')],
-            [RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),],
-            [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
             # free associate on fire
             [RetrievalStep('query', {'related to': 'fire'}, {}, 'name'),
             # free associate on mountain (should not return hill bc lava was just queried activated)
-            RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),]
+            RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),],
+            [RetrievalStep('query', {'related to': 'fire'}, {}, 'associated with')], # lave --> volcano
+            [RetrievalStep('query', {'similar to': 'mountain'}, {}, 'name'),],
+            [RetrievalStep('query', {'located in': 'indonesia'}, {'is a': 'mountain'}, 'type') ],
+
 
 
 
@@ -328,7 +329,16 @@ def create_paired_recall_tasks():
     for paradigm, representation in generator:
         variable_name = paradigm + '_' + representation
 
-        knowledge_list = []
+        knowledge_list = [
+            Knowledge('A', {'to': 'E'}),
+            Knowledge('B', {'to': 'F'}),
+            Knowledge('C', {'to': 'G'}),
+            Knowledge('D', {'to': 'H'}),
+            Knowledge('E', {'first': 'J', 'second': 'K'}),
+            Knowledge('F', {'first': 'L', 'second': 'M'}),
+            Knowledge('G', {'first': 'N', 'second': 'P'}),
+            Knowledge('H', {'first': 'Q', 'second': 'R'}),
+        ]
         for i in range(0, 4, 2):
             # determine attributes
             if representation == 'direct':
@@ -501,15 +511,38 @@ def num_results_fok(store, terms, result, query_time, results_looked_through, st
     return len(store.query_results)
     # FIXME is the same the whole time
 
+# FIXME USE A DICTIONARY
 def create_historic_fok(fok_function):
-    foks = []
+    params = {
+        'prev_fok': 0,
+        'prev_f1': 0,
+        'f0': 0, # weighted avg of fok measurements
+        'f1': 0, # weighted avg of first differences
+        'f2': 0, # weighted avg of second differences
+        'gamma': 0.3333,
+    }
     def real_fok(store, terms, result, query_time, results_looked_through, step_num):
-        foks.append(fok_function(store, terms, result, query_time, results_looked_through, step_num))
-        if len(foks) < 2:  # baseline is 0
-            return mean(foks)
-        else:
-            return foks[len(foks)-1] - foks[len(foks)-2]  # delta of the last two foks to determine decrease/ increase
+        new_fok = fok_function(store, terms, result, query_time, results_looked_through, step_num)
+        #foks.append(new_fok)
+        # calculate weighted avg of fok measurements
+        temp = params['gamma']*(new_fok + params['f0'])
+        params['f0'] = temp
+        #new_difference = foks[len(foks) - 1] -foks[len(foks) - 2]
 
+        # find new differences
+        new_f1 = new_fok - params['prev_fok']
+        new_f2 = params['f1'] - params['prev_f1']
+
+        # do weighted avg of first and second differences
+        params['f1'] = params['gamma']*(new_f1 + params['f1'])
+        params['f2'] = params['gamma'] * (new_f2 + params['f2'])
+
+        # update prevs
+        params['prev_fok'] = new_fok
+        params['prev_f1'] = params['f1']
+
+        # return the average of the three averages (?)
+        return (params['f0'] + params['f1'] + params['f2'])/3
 
     return real_fok
 
@@ -554,7 +587,7 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, tim
                 hist_list.append(hist_foks[index])
                 step_labels.append(step_list[index])
                 index += 1
-            if index == len(steps) -1:    # end of the list
+            if index == len(steps) -1 :    # end of the list
                 break
             index += 1  # skipping over blank line in method
             # legend_label=method_name
@@ -572,7 +605,6 @@ def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, tim
             # label point with strategy . step num
             labels = LabelSet(x='time', y='fok', text='strat_step', level='glyph',
                               x_offset=5, y_offset=5, source=source, render_mode='canvas')
-
             graph.add_layout(labels)
 
             if task_names[index] == name:  # next plot of different fok method
