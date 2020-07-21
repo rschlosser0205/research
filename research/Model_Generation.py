@@ -294,7 +294,7 @@ TASKS = {
                 Knowledge('liberal arts school', {'is_a': 'college'}),
                 Knowledge('dorm', {'is_a': 'building', 'has': 'rooms', 'requires': 'key', 'holds': 'students', 'located in': 'colleges'}),
                 Knowledge('key', {'used for': 'doors'}),
-                Knowledge('lanyard', {'holds': 'key', 'used by': 'students', 'is not': 'keychain'}),
+                Knowledge('lanyard', {'holds': 'key', 'used by': 'students'}),
                 Knowledge('keychain', {'holds': 'key'}),
                 Knowledge('notebook', {'used by': 'students', 'holds': 'notes'}),
                 Knowledge('laptop', {'used by': 'students', 'is a': 'computer'}),
@@ -309,7 +309,7 @@ TASKS = {
                 strategies=[
                     [RetrievalStep('query', {'related to':'college'}, {'holds': 'key'}, 'node_id')], # high fok bc college, but fails
                     [RetrievalStep('query', {'holds': 'key'}, {'origin': 'sailing'}, 'node_id'),], # does not fail immediately
-                    [RetrievalStep('query', {'holds': 'key'}, {'used by': 'students'}, 'node_id')], # try again from a different college angle
+                    [RetrievalStep('query', {'used by': 'students'}, {'holds': 'key'}, 'node_id')], # try again from a different college angle
                     [RetrievalStep('query', {'holds': 'key'}, {'is not': 'keychain'}, 'node_id')] # returns....lanyard!
 
             ],
@@ -328,17 +328,31 @@ def create_paired_recall_tasks():
     )
     for paradigm, representation in generator:
         variable_name = paradigm + '_' + representation
+        knowledge_list = []
+        for item in volcano_knowledge_list:
+            knowledge_list.append(item)
+        knowledge_list.append(Knowledge('AB', {'meets': 'bryce'}))
+        knowledge_list.append(Knowledge('AD', {'meets': 'tim'}))
+        knowledge_list.append(Knowledge('CB', {'meets': 'ruth'}))
+        knowledge_list.append(Knowledge('CD', {'meets': 'harold'}))
+        # knowledge_list.append(Knowledge('A', {'to': 'E'}))
+        # knowledge_list.append(Knowledge('B', {'to': 'F'}))
+        # knowledge_list.append(Knowledge('C', {'to': 'G'}))
+        # knowledge_list.append(Knowledge('D', {'to': 'H'}))
+        # knowledge_list.append(Knowledge('A', {'has friend': 'bryce'}))
+        # knowledge_list.append(Knowledge('B', {'has friend': 'time'}))
+        # knowledge_list.append(Knowledge('C', {'has friend': 'ruth'}))
+        # knowledge_list.append(Knowledge('D', {'has friend': 'harold'}))
+        # knowledge_list.append(Knowledge('E', {'first': 'J', 'second': 'K'}))
+        # knowledge_list.append(Knowledge('F', {'first': 'L', 'second': 'M'}))
+        # knowledge_list.append(Knowledge('G', {'first': 'N', 'second': 'P'}))
+        # knowledge_list.append(Knowledge('H', {'first': 'Q', 'second': 'R'}))
+        # knowledge_list.append(Knowledge('ruth', {'meets': 'Q'}))
+        # knowledge_list.append(Knowledge('bryce', {'meets': 'N'}))
 
-        knowledge_list = [
-            Knowledge('A', {'to': 'E'}),
-            Knowledge('B', {'to': 'F'}),
-            Knowledge('C', {'to': 'G'}),
-            Knowledge('D', {'to': 'H'}),
-            Knowledge('E', {'first': 'J', 'second': 'K'}),
-            Knowledge('F', {'first': 'L', 'second': 'M'}),
-            Knowledge('G', {'first': 'N', 'second': 'P'}),
-            Knowledge('H', {'first': 'Q', 'second': 'R'}),
-        ]
+
+
+
         for i in range(0, 4, 2):
             # determine attributes
             if representation == 'direct':
@@ -379,14 +393,12 @@ create_paired_recall_tasks()
 def determine_fok_function(method):
     if method == 'relative_activation_fok':
         return relative_activation_fok
-    elif method == 'step_num':
-        return step_num_fok
     elif method == 'outgoing_edges_fok':
         return outgoing_edges_fok
     elif method == 'act_over_edges_fok_2':
         return act_over_edges_fok_2
-    elif method == 'num_results_fok':
-        return num_results_fok
+    elif method == 'activation_fok':
+        return activation_fok
     elif method == 'competition_fok_1':
         return competition_fok_1
     elif method == 'competition_fok_2':
@@ -402,6 +414,7 @@ def avg_activation_of_everything(store, query_time):
         store.get_activation(node, query_time, True)
         for node in all_nodes
     )/len(all_nodes)
+    print('avg = ' + str(avg))
     return avg
 
 
@@ -451,8 +464,8 @@ def results_looked_through_fok(store, terms, result, query_time, results_looked_
         return 1/results_looked_through
     return 0
 
-def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return step_num
+# def step_num_fok(store, terms, result, query_time, results_looked_through, step_num):
+#     return step_num
 
 def outgoing_edges_fok(store, terms, result, query_time, results_looked_through, step_num):
     if len(terms) > 0:
@@ -507,11 +520,18 @@ def competition_fok_2(store, terms, result, query_time, results_looked_through, 
     else:
         return 1/edges
 
-def num_results_fok(store, terms, result, query_time, results_looked_through, step_num):
-    return len(store.query_results)
-    # FIXME is the same the whole time
+# returns just the activation, without relativity adjustments
+def activation_fok(store, terms, result, query_time, results_looked_through, step_num):
+    if len(terms) > 0:
+        return sum(
+        store.get_activation(cue, query_time, True) for cue in terms.values()
+    )
+    elif result is not None:
+        return store.get_activation(result, query_time, True)
+    else:
+        return 0
 
-# FIXME USE A DICTIONARY
+
 def create_historic_fok(fok_function):
     params = {
         'prev_fok': 0,
@@ -519,7 +539,7 @@ def create_historic_fok(fok_function):
         'f0': 0, # weighted avg of fok measurements
         'f1': 0, # weighted avg of first differences
         'f2': 0, # weighted avg of second differences
-        'gamma': 0.3333,
+        'gamma': 0.48,
     }
     def real_fok(store, terms, result, query_time, results_looked_through, step_num):
         new_fok = fok_function(store, terms, result, query_time, results_looked_through, step_num)
@@ -542,7 +562,7 @@ def create_historic_fok(fok_function):
         params['prev_f1'] = params['f1']
 
         # return the average of the three averages (?)
-        return (params['f0'] + params['f1'] + params['f2'])/3
+        return params['f0']
 
     return real_fok
 
@@ -564,8 +584,8 @@ def create_table(headers, column_values):
 
 # FIXME ADD LABELS
 def create_and_display_graph(steps, foks, hist_foks, fok_method, task_names, time_stamps):
-    color_list = ['#f52500', '#f59700', '#c9b500', '#5ca602', '#05e8a8', '#00c5db', '#0038d1', '#9457ff', '#cc28fa',
-                  '#e305a4']
+    color_list = ['#cc28fa', '#f52500', '#f59700', '#c9b500', '#5ca602', '#e305a4', '#05e8a8', '#00c5db', '#0038d1', '#9457ff',
+                  ]
 
     graph_list = []
 
@@ -629,12 +649,12 @@ def test_model():
     global task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list, strat_list, time_list
     act_decay_rate = [-0.25]
     act_scale_factor = [0.5]
-    act_max_steps = [6]
+    act_max_steps = [30]
     act_capped = [True]
     backlinks = [True]
     fok_methods = [
-        'relative_activation_fok', 'step_num',
-        'outgoing_edges_fok', 'act_over_edges_fok_2', 'num_results_fok', 'competition_fok_1',
+        'relative_activation_fok',
+        'outgoing_edges_fok', 'act_over_edges_fok_2', 'activation_fok', 'competition_fok_1',
         'competition_fok_2'
     ]
     task_names = list(TASKS.keys())
@@ -644,23 +664,22 @@ def test_model():
     #                'michigan_football_q', 'china_flag_q', 'khmer_cambodia_q', 'olympics_washington'
     #               ]
 
-    # task_names = ['ABAB_pairs', 'ABCB_pairs', 'ABCD_pairs', 'ABAD_pairs',
-    #                  'ABAB_types', 'ABCB_types', 'ABCD_types', 'ABAD_types',]
+    task_names = ['ABAB_pairs', 'ABCB_pairs', 'ABCD_pairs', 'ABAD_pairs',
+                    'ABAB_types', 'ABCB_types', 'ABCD_types', 'ABAD_types',]
 
 
     generator = product(
-        task_names,
+        fok_methods,
         act_decay_rate,
         act_scale_factor,
         act_max_steps,
         act_capped,
         backlinks,
-        fok_methods,
-
+        task_names,
 
     )
 
-    for task_name, rate, scale, step, cap, backlink, fok_method, in generator:
+    for  fok_method, rate, scale, step, cap, backlink, task_name, in generator:
         query_list = []   # creating/ resetting query and retrieval lists
         retrieval_dict = {}
         task = TASKS[task_name]
@@ -784,11 +803,11 @@ def test_model():
                 strat_list.append('')
                 print()
                 break
-    create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list, time_list)
+    #create_and_display_graph(step_list, fok_list, hist_fok_list, fok_method_list, task_list, time_list)
 
 
 test_model()
-#create_table(['task', 'fok method', 'strategy . step', 'fok', 'historic fok', 'result'], [task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list])
+create_table(['task', 'fok method', 'strategy . step', 'fok', 'historic fok', 'result'], [task_list, fok_method_list, step_list, fok_list, hist_fok_list, result_list])
 
 
 
